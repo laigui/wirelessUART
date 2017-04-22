@@ -54,6 +54,9 @@ class MyTest(object):
         self.ser = E32(port='/dev/ttyS0', inHex=False)
         self.test_init()
 
+    def __del__(self):
+        GPIO.cleanup()
+
     def configure(self, tx_interval_ms=3000, rx_timeout_ms=5000, pkt_min_len=3, pkt_max_len=10):
         self._rx_timeout_ms = rx_timeout_ms
         self._tx_interval_ms = tx_interval_ms
