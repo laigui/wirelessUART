@@ -100,6 +100,8 @@ class MyTest(object):
         self._rx_cnt = 0
         self._rx_nok_cnt = 0
         self._rx_ok_cnt = 0
+        self.ser.reset_rxcnt()
+        self.ser.reset_txcnt()
 
     def start_rx(self):
         global t1
