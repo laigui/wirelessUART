@@ -8,7 +8,7 @@ import logging
 from Queue import Queue
 import RPi.GPIO as GPIO
 
-_TAG = "+"
+_TAG = "5"
 
 class PacketGen(object):
     """A packet generation class"""
@@ -21,7 +21,7 @@ class PacketGen(object):
         length = random.sample(range(self._min_len, self._max_len), 1)[0]
         print "random {0}".format(length)
         str = self._tag + \
-              ''.join(random.choice(string.letters + string.digits) for i in range(length))
+              ''.join(random.choice(string.letters) for i in range(length))
         return str
 
 
@@ -51,7 +51,7 @@ class MyTest(object):
         self._pkt_len = 0
         self._str_txed = ''
         self._str_rxed = ''
-        self.ser = E32(port='/dev/ttyUSB0', inHex=False)
+        self.ser = E32(port='/dev/ttyS0', inHex=False)
         self.test_init()
 
     def configure(self, tx_interval_ms=3000, rx_timeout_ms=5000, pkt_min_len=3, pkt_max_len=10):
