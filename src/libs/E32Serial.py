@@ -5,6 +5,7 @@ __author__ = 'Wei'
 
 from mySerial import aSerial
 import time
+import RPi.GPIO as GPIO
 
 class E32(aSerial):
     """A class implementation for E32 from CDEBYTE"""
@@ -22,6 +23,23 @@ class E32(aSerial):
         self.GPIO_M0 = 17
         self.GPIO_M1 = 18
         self.GPIO_AUX = 27
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.GPIO_M0, GPIO.OUT)
+        GPIO.setup(self.GPIO_M1, GPIO.OUT)
+        GPIO.setup(self.GPIO_AUX, GPIO.IN, GPIO.PUD_UP)
+        self.set_E32_mode(0)
+
+    def __del__(self):
+        GPIO.cleanup()
+
+    def set_E32_mode(self, mode):
+        if mode == 0: # normal TX mode
+            GPIO.output(self.GPIO_M0, GPIO.LOW)
+            GPIO.output(self.GPIO_M1, GPIO.LOW)
+        elif mode == 3: # configuration mode
+            GPIO.output(self.GPIO_M0, GPIO.HIGH)
+            GPIO.output(self.GPIO_M1, GPIO.HIGH)
 
     def reset(self):
         pass
