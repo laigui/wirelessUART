@@ -105,9 +105,9 @@ class mainWin(tk.Frame):
         pw1.add(frameInput)
         self.pkt_min_len = inputCellE(frameInput, "最小包长（字节）", "5")
         self.pkt_max_len = inputCellE(frameInput, "最大包长（字节）", "30")
-        self.tx_interval_ms = inputCellE(frameInput, "发送间隔（毫秒）", "3000")
-        self.rx_timeout_ms = inputCellE(frameInput, "接收超时（秒）", "5")
-        self.loop = inputCellE(frameInput, "测试循环次数", "10")
+        self.tx_interval_ms = inputCellE(frameInput, "发送间隔（毫秒）", "10000")
+        self.rx_timeout_ms = inputCellE(frameInput, "接收超时（秒）", "10")
+        self.loop = inputCellE(frameInput, "测试循环次数", "0")
 
         self.text_button_start = StringVar()
         self.text_button_start.set("开始")
