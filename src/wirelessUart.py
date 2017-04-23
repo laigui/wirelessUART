@@ -148,7 +148,7 @@ def new_gui_thread():
 def do_start():
     mywin.inTest = True
     test.configure(tx_interval_ms=int(mywin.tx_interval_ms.get()),
-                   rx_timeout_ms=int(mywin.rx_timeout_ms.get()),
+                   rx_timeout=int(mywin.rx_timeout_ms.get()),
                    pkt_max_len=int(mywin.pkt_max_len.get()),
                    pkt_min_len=int(mywin.pkt_min_len.get()),
                    )
