@@ -113,54 +113,79 @@ class MyTest(object):
         pkt_started = False
         time_loop = 0
         rx_len = 0
+        str_p = ''
         while True:
-            str = self.ser.receive()
+            if self._tx_cnt > self._rx_cnt: # TXed packet out
+                str = self.ser.receive()
+                if str:
+                    try:
+                        str = str_p + str
+                        index = str.index(_TAG)
+                    except ValueError:
+                        if pkt_started: # normal receiving after TAG is detected
+                            self._str_rxed = ''.join([self._str_rxed, str])
+                            rx_len += len(str)
+                        else: # no TAG is received
+                            str_p = str
+                            self.logger.debug("TAG %s not found.\n$s\n", _TAG, str)
+                            self.gui_log.put("TAG {0} not found\n{1}\n".format(_TAG, str))
+                    else: # TAG is detected
+                        str_p = ''
+                        self._str_rxed = str[index:]
+                        rx_len = len(self._str_rxed)
+                        pkt_started = True
+                        time_loop = 0
 
-            if str:
-                try:
-                    index = str.index(_TAG)
-                except ValueError:
-                    if pkt_started: # normal receiving after TAG is detected
-                        self._str_rxed = ''.join([self._str_rxed, str])
-                        rx_len += len(str)
+                if pkt_started:
+                    if time_loop < self._rx_timeout_ms:
+                        if rx_len >= self._pkt_len: # one packet receiving done
+                            pkt_started = False
+                            self._rx_cnt += 1
+                            time_loop = 0
+                            if self._str_rxed == self._str_txed:
+                                self._rx_ok_cnt += 1
+                                GPIO.output(self._GPIO_LED, GPIO.HIGH)
+                                self.logger.info("+++ loop %d succeeded (P: %d F: %d) +++",
+                                                 self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
+                                self.gui_log.put("+++ loop {0} succeeded (P: {1} F: {2}) +++\n".format(self._rx_cnt,
+                                                                                                       self._rx_ok_cnt,
+                                                                                                       self._rx_nok_cnt))
+                            else:
+                                self.logger.error("*** loop %d failed (P: %d F: %d) ***",
+                                                 self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
+                                self.gui_log.put("*** loop {0} failed (P: {1} F: {2}) ***\n".format(self._rx_cnt,
+                                                                                                    self._rx_ok_cnt,
+                                                                                                    self._rx_nok_cnt))
+                                self.logger.error("*** Data mismatch ***")
+                                self.logger.error("TX: %s", self._str_txed)
+                                self.logger.error("RX: %s", self._str_rxed)
+                                self._rx_nok_cnt += 1
+                        else:
+                            time.sleep(0.001) # sleep for 1ms
+                            time_loop += 1
                     else:
-                        self.logger.error("TAG %s not found", _TAG)
-                        self.gui_log.put("TAG {0} not found\n".format(_TAG))
-                        continue
-                else: # TAG is detected
-                    self._str_rxed = str[index:]
-                    rx_len = len(self._str_rxed)
-                    pkt_started = True
-                
-            if pkt_started:
-                if time_loop < self._rx_timeout_ms:
-                    if rx_len >= self._pkt_len: # one packet receiving done
+                        self._rx_nok_cnt += 1
                         pkt_started = False
                         self._rx_cnt += 1
                         time_loop = 0
-                        if self._str_rxed == self._str_txed:
-                            self._rx_ok_cnt += 1
-                            GPIO.output(self._GPIO_LED, GPIO.HIGH)
-                            self.logger.info("+++ loop %d succeeded (P: %d F: %d) +++",
-                                             self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
-                            self.gui_log.put("+++ loop {0} succeeded (P: {1} F: {2}) +++\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt))
-                        else:
-                            self.logger.error("*** loop %d failed (P: %d F: %d) ***",
-                                             self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
-                            self.gui_log.put("*** loop {0} failed (P: {1} F: {2}) ***\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt))
-                            self.logger.error("*** Data mismatch ***")
-                            self.logger.error("TX: %s", self._str_txed)
-                            self.logger.error("RX: %s", self._str_rxed)
-                            self._rx_nok_cnt += 1
-                    else:
-                        time.sleep(0.001) # sleep for 1ms
-                        time_loop += 1
-                else:
-                    self._rx_nok_cnt += 1
-                    pkt_started = False
-                    self._rx_cnt += 1
-                    time_loop = 0
-                    self.logger.error("!!! loop %d RX timeout (P: %d F: %d) !!!",
-                                      self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
-                    self.gui_log.put("!!! loop {0} RX timeout (P: {1} F: {2}) !!!\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt))
+                        self.logger.error("!!! loop %d in pkt RX timeout (P: %d F: %d) !!!",
+                                          self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
+                        self.gui_log.put("!!! loop {0} in pkt RX timeout (P: {1} F: {2}) !!!\n".format(self._rx_cnt,
+                                                                                                self._rx_ok_cnt,
+                                                                                                self._rx_nok_cnt))
+                else: # txed packet, so we should count here
+                    time.sleep(0.001)  # sleep for 1ms
+                    time_loop += 1
+                    if time_loop > self._rx_timeout_ms:
+                        self._rx_nok_cnt += 1
+                        pkt_started = False
+                        self._rx_cnt += 1
+                        time_loop = 0
+                        self.logger.error("!!! loop %d RX timeout (P: %d F: %d) !!!",
+                                          self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
+                        self.gui_log.put(
+                            "!!! loop {0} RX timeout (P: {1} F: {2}) !!!\n".format(self._rx_cnt,
+                                                                                   self._rx_ok_cnt,
+                                                                                   self._rx_nok_cnt))
+
 
