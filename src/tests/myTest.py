@@ -32,11 +32,11 @@ class MyTest(object):
     receive from serial
     bit true check
     """
-    def __init__(self, tx_interval_ms=3000, rx_timeout_ms=5000, pkt_min_len=3, pkt_max_len=10):
+    def __init__(self, tx_interval_ms=3000, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
         self.logger = logging.getLogger("myLogger.myTest")
         self.gui_log = Queue(0)
         self.log_buffer = ''
-        self._rx_timeout_ms = rx_timeout_ms
+        self._rx_timeout = rx_timeout
         self._tx_interval_ms = tx_interval_ms
         self._pkt_min_len = pkt_min_len
         self._pkt_max_len = pkt_max_len
@@ -57,8 +57,8 @@ class MyTest(object):
     def __del__(self):
         GPIO.cleanup()
 
-    def configure(self, tx_interval_ms=3000, rx_timeout_ms=5000, pkt_min_len=3, pkt_max_len=10):
-        self._rx_timeout_ms = rx_timeout_ms
+    def configure(self, tx_interval_ms=3000, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
+        self._rx_timeout = rx_timeout
         self._tx_interval_ms = tx_interval_ms
         self._pkt_min_len = pkt_min_len
         self._pkt_max_len = pkt_max_len
@@ -115,6 +115,7 @@ class MyTest(object):
         rx_len = 0
         str_p = ''
         while True:
+            time.sleep(1)
             if self._tx_cnt > self._rx_cnt: # TXed packet out
                 str = self.ser.receive()
                 if str:
@@ -137,7 +138,7 @@ class MyTest(object):
                         time_loop = 0
 
                 if pkt_started:
-                    if time_loop < self._rx_timeout_ms:
+                    if time_loop < self._rx_timeout:
                         if rx_len >= self._pkt_len: # one packet receiving done
                             pkt_started = False
                             self._rx_cnt += 1
@@ -161,7 +162,6 @@ class MyTest(object):
                                 self.logger.error("RX: %s", self._str_rxed)
                                 self._rx_nok_cnt += 1
                         else:
-                            time.sleep(0.001) # sleep for 1ms
                             time_loop += 1
                     else:
                         self._rx_nok_cnt += 1
@@ -174,9 +174,8 @@ class MyTest(object):
                                                                                                 self._rx_ok_cnt,
                                                                                                 self._rx_nok_cnt))
                 else: # txed packet, so we should count here
-                    time.sleep(0.001)  # sleep for 1ms
                     time_loop += 1
-                    if time_loop > self._rx_timeout_ms:
+                    if time_loop > self._rx_timeout:
                         self._rx_nok_cnt += 1
                         pkt_started = False
                         self._rx_cnt += 1

@@ -8,6 +8,7 @@ import Tkinter as tk
 import threading
 from tests.myTest import MyTest
 import logging
+import time
 
 
 class ScrolledText(tk.Frame):
@@ -105,7 +106,7 @@ class mainWin(tk.Frame):
         self.pkt_min_len = inputCellE(frameInput, "最小包长（字节）", "5")
         self.pkt_max_len = inputCellE(frameInput, "最大包长（字节）", "30")
         self.tx_interval_ms = inputCellE(frameInput, "发送间隔（毫秒）", "3000")
-        self.rx_timeout_ms = inputCellE(frameInput, "接收超时（毫秒）", "5000")
+        self.rx_timeout_ms = inputCellE(frameInput, "接收超时（秒）", "5")
         self.loop = inputCellE(frameInput, "测试循环次数", "10")
 
         self.text_button_start = StringVar()
@@ -136,6 +137,7 @@ def update_GUI():
     while True:
         message = test.toGUI()
         mywin.updateRxWin(message)
+        time.sleep(1)
 
 def new_gui_thread():
     global t_gui
