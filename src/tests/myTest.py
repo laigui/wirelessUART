@@ -128,7 +128,7 @@ class MyTest(object):
                             rx_len += len(str)
                         else: # no TAG is received
                             str_p = str
-                            self.logger.debug("TAG %s not found.\n$s\n", _TAG, str)
+                            self.logger.debug("TAG %s not found.\n%s\n", _TAG, str)
                             self.gui_log.put("TAG {0} not found\n{1}\n".format(_TAG, str))
                     else: # TAG is detected
                         str_p = ''
