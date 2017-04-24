@@ -67,14 +67,12 @@ class aSerial(object):
         self.tx_cnt = 0
 
     def receive(self):
-        aStr = None
+        aStr = ''
         rxStr = ''
         rx_cnt = 0
         if self.isOpen == True:
-            while self.sp.inWaiting() > 0:
-                rx = self.sp.read(1)
-                rx_cnt += 1
-                rxStr += rx
+            rx_cnt = self.sp.inWaiting()
+            rxStr = self.sp.read(rx_cnt)
             if rx_cnt > 0:
                 if self.inHex:
                     aStr = binascii.hexlify(rxStr)
