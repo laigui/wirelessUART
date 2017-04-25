@@ -32,12 +32,12 @@ class MyTest(object):
     receive from serial
     bit true check
     """
-    def __init__(self, tx_interval_ms=3000, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
+    def __init__(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
         self.logger = logging.getLogger("myLogger.myTest")
         self.gui_log = Queue(0)
         self.log_buffer = ''
         self._rx_timeout = rx_timeout
-        self._tx_interval_ms = tx_interval_ms
+        self._tx_interval = tx_interval
         self._pkt_min_len = pkt_min_len
         self._pkt_max_len = pkt_max_len
         self._GPIO_LED = 21
@@ -57,9 +57,9 @@ class MyTest(object):
     def __del__(self):
         GPIO.cleanup()
 
-    def configure(self, tx_interval_ms=3000, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
+    def configure(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
         self._rx_timeout = rx_timeout
-        self._tx_interval_ms = tx_interval_ms
+        self._tx_interval = tx_interval
         self._pkt_min_len = pkt_min_len
         self._pkt_max_len = pkt_max_len
         self.data = PacketGen(min_len=self._pkt_min_len, max_len=self._pkt_max_len)
@@ -90,7 +90,7 @@ class MyTest(object):
                 self._pkt_len = len(self._str_txed)
                 self.ser.transmit(self._str_txed)
                 self._tx_cnt += 1
-                time.sleep(self._tx_interval_ms/1000)
+                time.sleep(self._tx_interval)
         self.stop_tx()
 
     def stop_tx(self):

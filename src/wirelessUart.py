@@ -105,8 +105,8 @@ class mainWin(tk.Frame):
         pw1.add(frameInput)
         self.pkt_min_len = inputCellE(frameInput, "最小包长（字节）", "5")
         self.pkt_max_len = inputCellE(frameInput, "最大包长（字节）", "30")
-        self.tx_interval_ms = inputCellE(frameInput, "发送间隔（毫秒）", "10000")
-        self.rx_timeout_ms = inputCellE(frameInput, "接收超时（秒）", "10")
+        self.tx_interval = inputCellE(frameInput, "发送间隔（秒）", "10")
+        self.rx_timeout = inputCellE(frameInput, "接收超时（秒）", "10")
         self.loop = inputCellE(frameInput, "测试循环次数", "0")
 
         self.text_button_start = StringVar()
@@ -149,8 +149,8 @@ def new_gui_thread():
 
 def do_start():
     mywin.inTest = True
-    test.configure(tx_interval_ms=int(mywin.tx_interval_ms.get()),
-                   rx_timeout=int(mywin.rx_timeout_ms.get()),
+    test.configure(tx_interval=int(mywin.tx_interval.get()),
+                   rx_timeout=int(mywin.rx_timeout.get()),
                    pkt_max_len=int(mywin.pkt_max_len.get()),
                    pkt_min_len=int(mywin.pkt_min_len.get()),
                    )
@@ -160,8 +160,8 @@ def do_start():
     t0.start()
 
     logger.info("Test started with:")
-    logger.info("tx_interval_ms: %s", mywin.tx_interval_ms.get())
-    logger.info("rx_timeout_ms: %s", mywin.rx_timeout_ms.get())
+    logger.info("tx_interval: %s", mywin.tx_interval.get())
+    logger.info("rx_timeout: %s", mywin.rx_timeout.get())
     logger.info("pkt_max_len: %s", mywin.pkt_max_len.get())
     logger.info("pkt_min_len: %s", mywin.pkt_min_len.get())
     logger.info("loop: %s", mywin.loop.get())
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     logger_init()
     test = MyTest()
     rootWin = tk.Tk()
-    rootWin.title('智能路灯无线通讯压力测试')
+    rootWin.title('智能路灯无线通讯压力测试 V0425')
     mywin = mainWin(rootWin)
     new_gui_thread()
     rootWin.mainloop()
