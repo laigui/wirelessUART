@@ -131,7 +131,9 @@ class mainWin(tk.Frame):
         pw2.add(frameReceived)
 
     def updateRxWin(self, aStr):
-        self.text_recv.insert(tk.END, aStr)
+        self.text_recv.insert(tk.INSERT, aStr)
+        self.text_recv.text.see(tk.END)
+        self.text_recv.update()
 
 def update_GUI():
     while True:
