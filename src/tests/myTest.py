@@ -8,7 +8,7 @@ import logging
 from Queue import Queue
 import RPi.GPIO as GPIO
 
-_TAG = "5"
+_TAG = "=="
 
 class PacketGen(object):
     """A packet generation class"""
@@ -21,7 +21,7 @@ class PacketGen(object):
         length = random.sample(range(self._min_len, self._max_len), 1)[0]
         print "random {0}".format(length)
         str = self._tag + \
-              ''.join(random.choice(string.letters) for i in range(length))
+              ''.join(random.choice(string.letters + string.digits) for i in range(length))
         return str
 
 
