@@ -194,7 +194,7 @@ if __name__ == "__main__":
     logger_init()
     test = MyTest()
     rootWin = tk.Tk()
-    rootWin.title('智能路灯无线通讯压力测试 V0425')
+    rootWin.title('智能路灯无线通讯压力测试 V0428.1')
     mywin = mainWin(rootWin)
     new_gui_thread()
     rootWin.mainloop()

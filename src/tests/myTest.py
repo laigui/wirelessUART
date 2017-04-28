@@ -6,7 +6,12 @@ import threading
 from libs.E32Serial import E32
 import logging
 from Queue import Queue
-import RPi.GPIO as GPIO
+import os
+if os.uname()[4].find('arm') == 0:
+    import RPi.GPIO as GPIO
+    ISRPI = True
+else:
+    ISRPI = False
 
 _TAG = "5"
 
@@ -41,9 +46,10 @@ class MyTest(object):
         self._pkt_min_len = pkt_min_len
         self._pkt_max_len = pkt_max_len
         self._GPIO_LED = 21
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self._GPIO_LED, GPIO.OUT)
+        if ISRPI:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(self._GPIO_LED, GPIO.OUT)
         self._tx_cnt = 0
         self._rx_cnt = 0
         self._rx_nok_cnt = 0
@@ -51,11 +57,16 @@ class MyTest(object):
         self._pkt_len = 0
         self._str_txed = ''
         self._str_rxed = ''
-        self.ser = E32(port='/dev/ttyS0', inHex=False)
+        if ISRPI:
+            port = '/dev/ttyS0'
+        else:
+            port = '/dev/ttyUSB0'
+        self.ser = E32(port=port, inHex=False)
         self.test_init()
 
     def __del__(self):
-        GPIO.cleanup()
+        if ISRPI:
+            GPIO.cleanup()
 
     def configure(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
         self._rx_timeout = rx_timeout
@@ -67,7 +78,7 @@ class MyTest(object):
     def test_init(self):
         if self.ser.open():
             #pull out gabage bytes in RX FIFO
-            self.ser.receive()
+            self.ser.reset()
             self.start_rx()
 
     def toGUI(self):
@@ -76,6 +87,7 @@ class MyTest(object):
         return message
 
     def start_tx(self, loop):
+        self.ser.reset()
         self._loop = loop
         if self._loop > 0:
             self._infinity = False
@@ -85,7 +97,8 @@ class MyTest(object):
         while self._infinity or self._loop > self._rx_cnt:
             # wait for loopback rx check
             if self._tx_cnt == self._rx_cnt:
-                GPIO.output(self._GPIO_LED, GPIO.LOW)
+                if ISRPI:
+                    GPIO.output(self._GPIO_LED, GPIO.LOW)
                 self._str_txed = self.data.generate()
                 self._pkt_len = len(self._str_txed)
                 self.ser.transmit(self._str_txed)
@@ -100,8 +113,7 @@ class MyTest(object):
         self._rx_cnt = 0
         self._rx_nok_cnt = 0
         self._rx_ok_cnt = 0
-        self.ser.reset_rxcnt()
-        self.ser.reset_txcnt()
+        self.ser.reset()
 
     def start_rx(self):
         global t1
@@ -145,7 +157,8 @@ class MyTest(object):
                             time_loop = 0
                             if self._str_rxed == self._str_txed:
                                 self._rx_ok_cnt += 1
-                                GPIO.output(self._GPIO_LED, GPIO.HIGH)
+                                if ISRPI:
+                                    GPIO.output(self._GPIO_LED, GPIO.HIGH)
                                 self.logger.info("+++ loop %d succeeded (P: %d F: %d) +++",
                                                  self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt)
                                 self.gui_log.put("+++ loop {0} succeeded (P: {1} F: {2}) +++\n".format(self._rx_cnt,

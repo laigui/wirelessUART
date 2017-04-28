@@ -60,11 +60,11 @@ class aSerial(object):
         if self.sp:
             self.sp.close()
 
-    def reset_rxcnt(self):
+    def reset(self):
         self.rx_cnt = 0
-
-    def reset_txcnt(self):
+        self.sp.reset_input_buffer()
         self.tx_cnt = 0
+        self.sp.reset_output_buffer()
 
     def receive(self):
         aStr = ''
