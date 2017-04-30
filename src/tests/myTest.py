@@ -67,7 +67,6 @@ class MyTest(object):
         else:
             port = '/dev/ttyUSB0'
         self.ser = E32(port=port, inHex=False)
-        self.test_init()
 
     def __del__(self):
         if ISRPI:
@@ -92,6 +91,7 @@ class MyTest(object):
 
     def start_tx(self, loop):
 	if self.inTest == False:
+        	self.test_init()
 		self.inTest = True
         	self.start_rx()
         	self._loop = loop
@@ -127,9 +127,12 @@ class MyTest(object):
 	        self._str_txed = ''
         	self._str_rxed = ''
 		self.event_end.set()
+		t1.join()
         	self.ser.reset()
+		self.ser.close()
 
     def start_rx(self):
+	global t1
 	self.event_end.clear()
         t1 = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_end,))
         t1.start()

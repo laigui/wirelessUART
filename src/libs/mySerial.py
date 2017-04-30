@@ -59,6 +59,7 @@ class aSerial(object):
         self.isOpen = False
         if self.sp:
             self.sp.close()
+            self.logger.debug("%s is closed", self.port)
 
     def reset(self):
         self.tx_cnt = 0
