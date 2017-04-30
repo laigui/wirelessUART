@@ -115,9 +115,9 @@ class MyTest(object):
         self._tx_cnt = 0
         self._rx_cnt = 0
         self._rx_nok_cnt = 0
-	    self._rx_nok_cnt_mismatch = 0
-	    self._rx_nok_cnt_in_pkt_rx_timeout = 0
-	    self._rx_nok_cnt_rx_timeout = 0
+	self._rx_nok_cnt_mismatch = 0
+	self._rx_nok_cnt_in_pkt_rx_timeout = 0
+	self._rx_nok_cnt_rx_timeout = 0
         self._rx_ok_cnt = 0
         self.ser.reset()
 
