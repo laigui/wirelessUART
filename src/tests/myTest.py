@@ -38,6 +38,8 @@ class MyTest(object):
     bit true check
     """
     def __init__(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
+	self.event_end = threading.Event()
+	self.inTest = False
         self.logger = logging.getLogger("myLogger.myTest")
         self.gui_log = Queue(0)
         self.log_buffer = ''
@@ -82,7 +84,6 @@ class MyTest(object):
         if self.ser.open():
             #pull out gabage bytes in RX FIFO
             self.ser.reset()
-            self.start_rx()
 
     def toGUI(self):
         message = self.gui_log.get(True)
@@ -90,49 +91,55 @@ class MyTest(object):
         return message
 
     def start_tx(self, loop):
-        self.ser.reset()
-        self._loop = loop
-        if self._loop > 0:
-            self._infinity = False
-        else:
-            self._infinity = True
+	if self.inTest == False:
+		self.inTest = True
+        	self.start_rx()
+        	self._loop = loop
+	        if self._loop > 0:
+        	    self._infinity = False
+	        else:
+        	    self._infinity = True
 
-        while self._infinity or self._loop > self._rx_cnt:
-            # wait for loopback rx check
-            if self._tx_cnt == self._rx_cnt:
-                if ISRPI:
-                    GPIO.output(self._GPIO_LED, GPIO.LOW)
-                self._str_txed = self.data.generate()
-                self._pkt_len = len(self._str_txed)
-                self.ser.transmit(self._str_txed)
-                self._tx_cnt += 1
-                time.sleep(self._tx_interval)
-        self.stop_tx()
+	        while self._infinity or self._loop > self._rx_cnt:
+        	    # wait for loopback rx check
+	            if self._tx_cnt == self._rx_cnt:
+        	        if ISRPI:
+                	    GPIO.output(self._GPIO_LED, GPIO.LOW)
+	                self._str_txed = self.data.generate()
+        	        self._pkt_len = len(self._str_txed)
+	                self.ser.transmit(self._str_txed)
+        	        self._tx_cnt += 1
+                	time.sleep(self._tx_interval)
+	        self.stop_tx()
 
     def stop_tx(self):
-        self._infinity = 0
-        self._loop = 0
-        self._tx_cnt = 0
-        self._rx_cnt = 0
-        self._rx_nok_cnt = 0
-	self._rx_nok_cnt_mismatch = 0
-	self._rx_nok_cnt_in_pkt_rx_timeout = 0
-	self._rx_nok_cnt_rx_timeout = 0
-        self._rx_ok_cnt = 0
-        self.ser.reset()
+	if self.inTest == True:
+		self.inTest = False
+	        self._infinity = 0
+	        self._loop = 0
+	        self._tx_cnt = 0
+        	self._rx_cnt = 0
+	        self._rx_nok_cnt = 0
+		self._rx_nok_cnt_mismatch = 0
+		self._rx_nok_cnt_in_pkt_rx_timeout = 0
+		self._rx_nok_cnt_rx_timeout = 0
+        	self._rx_ok_cnt = 0
+	        self._str_txed = ''
+        	self._str_rxed = ''
+		self.event_end.set()
+        	self.ser.reset()
 
     def start_rx(self):
-        global t1
-        t1 = threading.Thread(target=self.do_receiving, name="Thread-RX")
-        t1.daemon = True
+	self.event_end.clear()
+        t1 = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_end,))
         t1.start()
 
-    def do_receiving(self):
+    def do_receiving(self, e_end):
         pkt_started = False
         time_loop = 0
         rx_len = 0
         str_p = ''
-        while True:
+        while not e_end.isSet():
             time.sleep(1)
             if self._tx_cnt > self._rx_cnt: # TXed packet out
                 str = self.ser.receive()
@@ -211,5 +218,5 @@ class MyTest(object):
                         self.gui_log.put("!!! loop {0} RX timeout (P: {1} F: {2} [{3}, {4}, {5}]) !!!\n".format(
 					self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
 					self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout))
-
+	self.logger.info("Thread-RX end")
 

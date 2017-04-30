@@ -79,7 +79,6 @@ class mainWin(tk.Frame):
 
     def __init__(self, parent):
         self.isSerialEnabled = False
-        self.inTest = False
         tk.Frame.__init__(self, parent, class_='mainWin')
         self.pack(fill=BOTH, expand=TRUE)
         self.creatWidget()
@@ -148,17 +147,15 @@ def new_gui_thread():
     t_gui.start()
 
 def do_start():
-    if mywin.inTest == False:
-        mywin.inTest = True
-        test.configure(tx_interval=int(mywin.tx_interval.get()),
-                       rx_timeout=int(mywin.rx_timeout.get()),
-                       pkt_max_len=int(mywin.pkt_max_len.get()),
-                       pkt_min_len=int(mywin.pkt_min_len.get()),
-                       )
-        global t0
-        t0 = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
-        t0.daemon = True
-        t0.start()
+    test.configure(tx_interval=int(mywin.tx_interval.get()),
+                  rx_timeout=int(mywin.rx_timeout.get()),
+		  pkt_max_len=int(mywin.pkt_max_len.get()),
+		  pkt_min_len=int(mywin.pkt_min_len.get()),
+		  )
+    global t0
+    t0 = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
+    t0.daemon = True
+    t0.start()
 
     logger.info("Test started with:")
     logger.info("tx_interval: %s", mywin.tx_interval.get())
@@ -168,7 +165,6 @@ def do_start():
     logger.info("loop: %s", mywin.loop.get())
 
 def do_stop():
-    mywin.inTest = False
     test.stop_tx()
 
 def logger_init():

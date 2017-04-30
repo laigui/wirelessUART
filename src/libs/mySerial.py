@@ -62,10 +62,10 @@ class aSerial(object):
 
     def reset(self):
         self.tx_cnt = 0
-        self.sp.reset_output_buffer()
-        self.rx_cnt = 0
-        self.sp.reset_input_buffer()
+        self.sp.flushOutput()
         self.sp.read(self.sp.inWaiting())
+        self.rx_cnt = 0
+        self.sp.flushInput()
 
 
     def receive(self):

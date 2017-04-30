@@ -49,9 +49,6 @@ class E32(aSerial):
                 GPIO.output(self.GPIO_M0, GPIO.HIGH)
                 GPIO.output(self.GPIO_M1, GPIO.HIGH)
 
-    def reset(self):
-        pass
-
     def get_version(self):
         pass
 
