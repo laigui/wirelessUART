@@ -111,12 +111,13 @@ class MyTest(object):
                     self._tx_cnt += 1
                     time.sleep(self._tx_interval)
             self.stop_tx()
+            self.logger.info("Thread-TX end")
 
     def stop_tx(self):
         if self.inTest == True:
             self.logger.debug('Stop TX...')
             self.inTest = False
-            self._infinity = 0
+            self._infinity = False
             self._loop = 0
             self._tx_cnt = 0
             self._rx_cnt = 0

@@ -154,7 +154,6 @@ def do_start():
     global t_tx
     if t_tx == None:
         t_tx = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
-        t_tx.daemon = True
         t_tx.start()
         logger.info("Test started with:")
         logger.info("tx_interval: %s", mywin.tx_interval.get())
@@ -165,6 +164,9 @@ def do_start():
 
 def do_stop():
     test.stop_tx()
+    global t_tx
+    t_tx.join()
+    t_tx = None
 
 def logger_init():
     global logger
@@ -187,6 +189,7 @@ def logger_init():
     logger.addHandler(fh)
 
 if __name__ == "__main__":
+    global t_tx
     t_tx = None
     logger_init()
     test = MyTest()
