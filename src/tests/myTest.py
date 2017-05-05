@@ -6,6 +6,7 @@ import threading
 from libs.E32Serial import E32
 import logging
 from Queue import Queue
+from libs.myException import RxTimeOutError
 import os
 if os.uname()[4].find('arm') == 0:
     import RPi.GPIO as GPIO
@@ -38,6 +39,7 @@ class MyTest(object):
     """
     def __init__(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
         self.event_rx_end = threading.Event()
+        self.t_rx = None
         self.inTest = False
         self.logger = logging.getLogger("myLogger.myTest")
         self.gui_log = Queue(0)
@@ -109,12 +111,16 @@ class MyTest(object):
                     self._pkt_len = len(self._str_txed)
                     self.ser.transmit(self._str_txed)
                     self._tx_cnt += 1
-                    time.sleep(self._tx_interval)
+                time.sleep(self._tx_interval)
             self.stop_tx()
             self.logger.info("Thread-TX end")
 
     def stop_tx(self):
         if self.inTest == True:
+            self.event_rx_end.set()
+            if self.t_rx != None:
+                self.t_rx.join()
+                self.t_rx = None
             self.logger.debug('Stop TX...')
             self.inTest = False
             self._infinity = False
@@ -128,16 +134,16 @@ class MyTest(object):
             self._rx_ok_cnt = 0
             self._str_txed = ''
             self._str_rxed = ''
-            self.event_rx_end.set()
-            self.t_rx.join()
             self.ser.reset()
             self.ser.close()
 
+
     def start_rx(self):
-        self.logger.debug('Start RX...')
-        self.event_rx_end.clear()
-        self.t_rx = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_rx_end,))
-        self.t_rx.start()
+        if self.t_rx == None:
+            self.logger.debug('Start RX...')
+            self.event_rx_end.clear()
+            self.t_rx = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_rx_end,))
+            self.t_rx.start()
 
     def do_receiving(self, e_end):
         pkt_started = False
@@ -145,75 +151,55 @@ class MyTest(object):
         rx_len = 0
         str_p = ''
         while not e_end.isSet():
-            time.sleep(1)
             if self._tx_cnt > self._rx_cnt: # TXed packet out
-                str = self.ser.receive()
-                if str:
-                    try:
-                        str = str_p + str
-                        index = str.index(_TAG)
-                    except ValueError:
-                        if pkt_started: # normal receiving after TAG is detected
-                            self._str_rxed = ''.join([self._str_rxed, str])
-                            rx_len += len(str)
-                        else: # no TAG is received
-                            str_p = str
-                            self.logger.debug("TAG %s not found.\n%s\n", _TAG, str)
-                            self.gui_log.put("TAG {0} not found\n{1}\n".format(_TAG, str))
-                    else: # TAG is detected
-                        str_p = ''
-                        self._str_rxed = str[index:]
-                        rx_len = len(self._str_rxed)
-                        pkt_started = True
-                        time_loop = 0
-
-                if pkt_started:
-                    if time_loop < self._rx_timeout:
-                        if rx_len >= self._pkt_len: # one packet receiving done
-                            pkt_started = False
-                            self._rx_cnt += 1
-                            time_loop = 0
-                            if self._str_rxed == self._str_txed:
-                                self._rx_ok_cnt += 1
-                                if ISRPI:
-                                    GPIO.output(self._GPIO_LED, GPIO.HIGH)
-                                self.logger.info("+++ loop %d succeeded (P: %d F: %d [%d, %d, %d]) +++",
-                                                 self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
-                                                 self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
-                                self.gui_log.put("+++ loop {0} succeeded (P: {1} F: {2} [{3}, {4}, {5}]) +++\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch, self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout))
-                            else:
-                                self._rx_nok_cnt += 1
-                                self._rx_nok_cnt_mismatch += 1
-                                self.logger.error("*** loop %d failed (P: %d F: %d [%d, %d, %d]) ***",
-                                                  self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
-                                                  self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
-                                self.gui_log.put("*** loop {0} failed (P: {1} F: {2} [{3}, {4}, {5}]) ***\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch, self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout))
-                                self.logger.error("*** Data mismatch ***")
-                                self.logger.error("TX: %s", self._str_txed)
-                                self.logger.error("RX: %s", self._str_rxed)
-                        else:
-                            time_loop += 1
+                try:
+                    str = self.ser.receive(self._pkt_len, self._rx_timeout)
+                except RxTimeOutError:
+                    self._rx_nok_cnt += 1
+                    self._rx_nok_cnt_rx_timeout += 1
+                    self.logger.error("RX %d bytes timeout", self._pkt_len)
+                    self.gui_log.put("RX {0} bytes timeout".format(self._pkt_len))
+                    self.logger.error("!!! loop %d RX timeout (P: %d F: %d [%d, %d, %d]) !!!",
+                                      self._tx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
+                                      self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
+                    self.gui_log.put(
+                        "!!! loop {0} RX timeout (P: {1} F: {2} [{3}, {4}, {5}]) !!!\n".format(self._tx_cnt,
+                                                                                               self._rx_ok_cnt,
+                                                                                               self._rx_nok_cnt,
+                                                                                               self._rx_nok_cnt_mismatch,
+                                                                                               self._rx_nok_cnt_in_pkt_rx_timeout,
+                                                                                               self._rx_nok_cnt_rx_timeout))
+                else:
+                    if str == self._str_txed:
+                        self._str_rxed = str
+                        self._rx_ok_cnt += 1
+                        if ISRPI:
+                            GPIO.output(self._GPIO_LED, GPIO.HIGH)
+                        self.logger.info("+++ loop %d succeeded (P: %d F: %d [%d, %d, %d]) +++",
+                                         self._tx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
+                                         self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
+                        self.gui_log.put("+++ loop {0} succeeded (P: {1} F: {2} [{3}, {4}, {5}]) +++\n".format(self._tx_cnt,
+                                                                                                               self._rx_ok_cnt,
+                                                                                                               self._rx_nok_cnt,
+                                                                                                               self._rx_nok_cnt_mismatch,
+                                                                                                               self._rx_nok_cnt_in_pkt_rx_timeout,
+                                                                                                               self._rx_nok_cnt_rx_timeout))
                     else:
                         self._rx_nok_cnt += 1
-                        self._rx_nok_cnt_in_pkt_rx_timeout += 1
-                        pkt_started = False
-                        self._rx_cnt += 1
-                        time_loop = 0
-                        self.logger.error("!!! loop %d in pkt RX timeout (P: %d F: %d [%d, %d, %d]) !!!",
-                                          self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
+                        self._rx_nok_cnt_mismatch += 1
+                        self.logger.error("*** Data mismatch ***")
+                        self.logger.error("TX: %s", self._str_txed)
+                        self.logger.error("RX: %s", self._str_rxed)
+                        self.logger.error("*** loop %d failed (P: %d F: %d [%d, %d, %d]) ***",
+                                          self._tx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
                                           self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
-                        self.gui_log.put("!!! loop {0} in pkt RX timeout (P: {1} F: {2} [{3}, {4}, {5}]) !!!\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch, self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout))
-                else: # txed packet, so we should count here
-                    time_loop += 1
-                    if time_loop > self._rx_timeout:
-                        self._rx_nok_cnt += 1
-                        self._rx_nok_cnt_rx_timeout += 1
-                        pkt_started = False
-                        self._rx_cnt += 1
-                        time_loop = 0
-                        self.logger.error("!!! loop %d RX timeout (P: %d F: %d [%d, %d, %d]) !!!",
-                                          self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
-                                          self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
-                        self.gui_log.put("!!! loop {0} RX timeout (P: {1} F: {2} [{3}, {4}, {5}]) !!!\n".format(self._rx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch, self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout))
+                        self.gui_log.put("*** loop {0} failed (P: {1} F: {2} [{3}, {4}, {5}]) ***\n".format(self._tx_cnt,
+                                                                                                            self._rx_ok_cnt,
+                                                                                                            self._rx_nok_cnt,
+                                                                                                            self._rx_nok_cnt_mismatch,
+                                                                                                            self._rx_nok_cnt_in_pkt_rx_timeout,
+                                                                                                            self._rx_nok_cnt_rx_timeout))
+                self._rx_cnt += 1
+            time.sleep(1)
         self.logger.info("Thread-RX end")
 

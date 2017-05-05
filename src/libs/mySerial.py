@@ -8,6 +8,8 @@ import serial
 import binascii
 import tkMessageBox
 import logging
+from time import sleep
+from libs.myException import RxTimeOutError
 
 class aSerial(object):
     """a serial class implementation with additional features"""
@@ -69,20 +71,40 @@ class aSerial(object):
         self.sp.flushInput()
 
 
-    def receive(self):
+    def receive(self, n=0, s=0):
+        '''
+        :param n: n bytes to be received, if n=0, return whatever are received.
+        :param s: s in seconds for timeout
+        :return: the string received
+        '''
         aStr = ''
         rxStr = ''
         rx_cnt = 0
+        timeout = 0
         if self.isOpen == True:
-            rx_cnt = self.sp.inWaiting()
-            rxStr = self.sp.read(rx_cnt)
-            if rx_cnt > 0:
-                if self.inHex:
-                    aStr = binascii.hexlify(rxStr)
-                else:
-                    aStr = rxStr
-                self.rx_cnt += rx_cnt
-                self.logger.debug("RX (%d/%d bytes): %s", rx_cnt, self.rx_cnt, aStr)
+            if n == 0:
+                rxStr = self.sp.read(self.sp.inWaiting())
+            else:
+                while rx_cnt < n:
+                    rxn = self.sp.inWaiting()
+                    left = n - rxn - rx_cnt
+                    if left >= 0:
+                        rxStr = rxStr + self.sp.read(rxn)
+                        rx_cnt = rx_cnt + rxn
+                        timeout += 1
+                        if timeout > s:
+                            raise RxTimeOutError(rx_cnt, n, s)
+                    else:
+                        rxStr = rxStr + self.sp.read(n - rx_cnt)
+                        rx_cnt = n
+                    sleep(1)
+
+            if self.inHex:
+                aStr = binascii.hexlify(rxStr)
+            else:
+                aStr = rxStr
+            self.rx_cnt += len(rxStr)
+            self.logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
         return aStr
 
     def transmit(self, aStr):
@@ -104,4 +126,3 @@ class aSerial(object):
             else:
                 self.tx_cnt += tx_cnt
                 self.logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)
-
