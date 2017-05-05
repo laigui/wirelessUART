@@ -83,7 +83,6 @@ class mainWin(tk.Frame):
         self.pack(fill=BOTH, expand=TRUE)
         self.creatWidget()
 
-
     def list_ports(self):
         import os
         if os.name == 'nt':

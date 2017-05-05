@@ -37,7 +37,7 @@ class MyTest(object):
     bit true check
     """
     def __init__(self, tx_interval=5, rx_timeout=5, pkt_min_len=3, pkt_max_len=10):
-        self.event_end = threading.Event()
+        self.event_rx_end = threading.Event()
         self.inTest = False
         self.logger = logging.getLogger("myLogger.myTest")
         self.gui_log = Queue(0)
@@ -127,17 +127,16 @@ class MyTest(object):
             self._rx_ok_cnt = 0
             self._str_txed = ''
             self._str_rxed = ''
-            self.event_end.set()
-            t_rx.join()
+            self.event_rx_end.set()
+            self.t_rx.join()
             self.ser.reset()
             self.ser.close()
 
     def start_rx(self):
-        global t_rx
         self.logger.debug('Start RX...')
-        self.event_end.clear()
-        t_rx = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_end,))
-        t_rx.start()
+        self.event_rx_end.clear()
+        self.t_rx = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_rx_end,))
+        self.t_rx.start()
 
     def do_receiving(self, e_end):
         pkt_started = False
