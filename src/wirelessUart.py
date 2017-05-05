@@ -148,21 +148,21 @@ def new_gui_thread():
 
 def do_start():
     test.configure(tx_interval=int(mywin.tx_interval.get()),
-                  rx_timeout=int(mywin.rx_timeout.get()),
-		  pkt_max_len=int(mywin.pkt_max_len.get()),
-		  pkt_min_len=int(mywin.pkt_min_len.get()),
-		  )
+                   rx_timeout=int(mywin.rx_timeout.get()),
+                   pkt_max_len=int(mywin.pkt_max_len.get()),
+                   pkt_min_len=int(mywin.pkt_min_len.get()),
+                   )
     global t0
-    t0 = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
-    t0.daemon = True
-    t0.start()
-
-    logger.info("Test started with:")
-    logger.info("tx_interval: %s", mywin.tx_interval.get())
-    logger.info("rx_timeout: %s", mywin.rx_timeout.get())
-    logger.info("pkt_max_len: %s", mywin.pkt_max_len.get())
-    logger.info("pkt_min_len: %s", mywin.pkt_min_len.get())
-    logger.info("loop: %s", mywin.loop.get())
+    if t0 == None:
+        t0 = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
+        t0.daemon = True
+        t0.start()
+        logger.info("Test started with:")
+        logger.info("tx_interval: %s", mywin.tx_interval.get())
+        logger.info("rx_timeout: %s", mywin.rx_timeout.get())
+        logger.info("pkt_max_len: %s", mywin.pkt_max_len.get())
+        logger.info("pkt_min_len: %s", mywin.pkt_min_len.get())
+        logger.info("loop: %s", mywin.loop.get())
 
 def do_stop():
     test.stop_tx()
@@ -188,6 +188,7 @@ def logger_init():
     logger.addHandler(fh)
 
 if __name__ == "__main__":
+    t0 = None
     logger_init()
     test = MyTest()
     rootWin = tk.Tk()
