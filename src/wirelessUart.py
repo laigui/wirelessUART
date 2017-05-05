@@ -152,11 +152,11 @@ def do_start():
                    pkt_max_len=int(mywin.pkt_max_len.get()),
                    pkt_min_len=int(mywin.pkt_min_len.get()),
                    )
-    global t0
-    if t0 == None:
-        t0 = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
-        t0.daemon = True
-        t0.start()
+    global t_tx
+    if t_tx == None:
+        t_tx = threading.Thread(target=test.start_tx, args=[int(mywin.loop.get())], name="Thread-TX")
+        t_tx.daemon = True
+        t_tx.start()
         logger.info("Test started with:")
         logger.info("tx_interval: %s", mywin.tx_interval.get())
         logger.info("rx_timeout: %s", mywin.rx_timeout.get())
@@ -188,7 +188,7 @@ def logger_init():
     logger.addHandler(fh)
 
 if __name__ == "__main__":
-    t0 = None
+    t_tx = None
     logger_init()
     test = MyTest()
     rootWin = tk.Tk()

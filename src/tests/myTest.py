@@ -128,16 +128,16 @@ class MyTest(object):
             self._str_txed = ''
             self._str_rxed = ''
             self.event_end.set()
-            t1.join()
+            t_rx.join()
             self.ser.reset()
             self.ser.close()
 
     def start_rx(self):
-        global t1
+        global t_rx
         self.logger.debug('Start RX...')
         self.event_end.clear()
-        t1 = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_end,))
-        t1.start()
+        t_rx = threading.Thread(target=self.do_receiving, name="Thread-RX", args=(self.event_end,))
+        t_rx.start()
 
     def do_receiving(self, e_end):
         pkt_started = False
