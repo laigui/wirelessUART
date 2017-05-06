@@ -5,9 +5,9 @@ class RxTimeOutError(Exception):
         self.seconds = seconds
 
     def __str__(self):
-        message = 'received: {0}\nexpect {1} bytes within {2} seconds'.format(self.rx_str, self.n, self.seconds)
+        message = 'RX: {0}\nexpect {1} bytes within {2} seconds'.format(self.rx_str, self.n, self.seconds)
         return message
 
 
 if __name__ == "__main__":
-    raise RxTimeOutError('abcd',10,5)
+    print RxTimeOutError('abcd',10,5)

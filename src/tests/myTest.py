@@ -157,8 +157,8 @@ class MyTest(object):
                 except RxTimeOutError as e: # not receive enough bytes until timeout
                     self._rx_nok_cnt += 1
                     self._rx_nok_cnt_rx_timeout += 1
-                    self.logger.error("RX %d bytes timeout\nRX: %s", self._pkt_len, e.rx_str)
-                    self.gui_log.put("RX {0} bytes timeout\nRX: %s\n".format(self._pkt_len, e.rx_str))
+                    self.logger.error("RX %d bytes timeout\nRX: %s", self._pkt_len, e)
+                    self.gui_log.put("RX {0} bytes timeout\nRX: {1}\n".format(self._pkt_len, e))
                     self.logger.error("!!! loop %d RX timeout (P: %d F: %d [%d, %d, %d]) !!!",
                                       self._tx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
                                       self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
