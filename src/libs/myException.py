@@ -1,13 +1,13 @@
 class RxTimeOutError(Exception):
-    def __init__(self, rx_cnt, expected, seconds):
-        self.rx_cnt = rx_cnt
-        self.expected = expected
+    def __init__(self, rx_str, n, seconds):
+        self.rx_str = rx_str
+        self.n = n
         self.seconds = seconds
 
     def __str__(self):
-        message = 'not receive {0} bytes within {1} seconds, only got {2} bytes'.format(self.expected,self.seconds, self.rx_cnt)
+        message = 'received: {0}\nexpect {1} bytes within {2} seconds'.format(self.rx_str, self.n, self.seconds)
         return message
 
 
 if __name__ == "__main__":
-    raise RxTimeOutError(4,10,5)
+    raise RxTimeOutError('abcd',10,5)

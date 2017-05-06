@@ -93,7 +93,7 @@ class aSerial(object):
                         rx_cnt = rx_cnt + rxn
                         timeout += 1
                         if timeout > s:
-                            raise RxTimeOutError(rx_cnt, n, s)
+                            raise RxTimeOutError(rxStr, n, s)
                     else:
                         rxStr = rxStr + self.sp.read(n - rx_cnt)
                         rx_cnt = n
