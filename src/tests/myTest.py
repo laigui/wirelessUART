@@ -192,7 +192,7 @@ class MyTest(object):
                                 self._rx_nok_cnt_mismatch += 1
                                 self.logger.error("*** Data mismatch ***")
                                 self.logger.error("TX: %s", self._str_txed)
-                                self.logger.error("RX: %s", self._str_rxed)
+                                self.logger.error("RX: %s", str)
                                 self.logger.error("*** loop %d failed (P: %d F: %d [%d, %d, %d]) ***",
                                                   self._tx_cnt, self._rx_ok_cnt, self._rx_nok_cnt, self._rx_nok_cnt_mismatch,
                                                   self._rx_nok_cnt_in_pkt_rx_timeout, self._rx_nok_cnt_rx_timeout)
