@@ -188,6 +188,7 @@ class MyTest(object):
                         index_s = str.find(self._str_txed)
                         while index_s == -1:
                             if time_loop > self._rx_timeout:
+                                time_loop = 0
                                 self._rx_nok_cnt += 1
                                 self._rx_nok_cnt_mismatch += 1
                                 self.logger.error("*** Data mismatch ***")
