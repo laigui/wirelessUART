@@ -111,7 +111,7 @@ class MyTest(object):
                     self._pkt_len = len(self._str_txed)
                     self.ser.transmit(self._str_txed)
                     self._tx_cnt += 1
-                time.sleep(self._tx_interval)
+                time.sleep(random.sample(range(1, self._tx_interval), 1)[0])
             self.stop_tx()
             self.logger.info("Thread-TX end")
 

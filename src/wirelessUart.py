@@ -103,7 +103,7 @@ class mainWin(tk.Frame):
         pw1.add(frameInput)
         self.pkt_min_len = inputCellE(frameInput, "最小包长（字节）", "5")
         self.pkt_max_len = inputCellE(frameInput, "最大包长（字节）", "30")
-        self.tx_interval = inputCellE(frameInput, "发送间隔（秒）", "2")
+        self.tx_interval = inputCellE(frameInput, "最大发送间隔（秒）", "10")
         self.rx_timeout = inputCellE(frameInput, "接收超时（秒）", "5")
         self.loop = inputCellE(frameInput, "测试循环次数", "0")
 
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     logger_init()
     test = MyTest()
     rootWin = tk.Tk()
-    rootWin.title('智能路灯无线通讯压力测试 V0507.1')
+    rootWin.title('智能路灯无线通讯压力测试 V0510.1')
     mywin = mainWin(rootWin)
     new_gui_thread()
     rootWin.mainloop()
