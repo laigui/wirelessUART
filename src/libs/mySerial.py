@@ -9,7 +9,7 @@ import binascii
 import tkMessageBox
 import logging
 from time import sleep
-from libs.myException import RxTimeOutError
+from myException import RxTimeOutError
 
 class aSerial(object):
     """a serial class implementation with additional features"""

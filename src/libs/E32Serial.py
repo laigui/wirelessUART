@@ -4,6 +4,7 @@
 __author__ = 'Wei'
 
 from mySerial import aSerial
+import binascii
 import time
 import os
 if os.uname()[4].find('arm') == 0:
@@ -50,10 +51,18 @@ class E32(aSerial):
                 GPIO.output(self.GPIO_M1, GPIO.HIGH)
 
     def get_version(self):
-        pass
+        cmd_str = '\xC3\xC3\xC3'
+        ser.set_E32_mode(3)
+        self.transmit(cmd_str)
+        time.sleep(1)
+        return binascii.hexlify(self.receive())
 
     def get_config(self):
-        pass
+        cmd_str = '\xC1\xC1\xC1'
+        ser.set_E32_mode(3)
+        self.transmit(cmd_str)
+        time.sleep(1)
+        return binascii.hexlify(self.receive())
 
     def set_config(self):
         pass
@@ -78,3 +87,12 @@ class E32(aSerial):
         else:
             super(E32, self).transmit(aStr)
 
+
+if __name__ == "__main__":
+    port = '/dev/ttyUSB0'
+    ser = E32(port=port, inHex=False)
+    ser.open()
+    ser.reset()
+    print ser.get_version()
+    print ser.get_config()
+    ser.close()
