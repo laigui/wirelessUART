@@ -169,6 +169,10 @@ def do_stop():
         t_tx.join()
         t_tx = None
 
+def on_exit():
+    do_stop()
+    rootWin.destroy()
+
 def logger_init():
     global logger
     logger = logging.getLogger("myLogger")
@@ -196,6 +200,7 @@ if __name__ == "__main__":
     test = MyTest()
     rootWin = tk.Tk()
     rootWin.title('智能路灯无线通讯压力测试 V0510.1')
+    rootWin.protocol("WM_DELETE_WINDOW", on_exit)
     mywin = mainWin(rootWin)
     new_gui_thread()
     rootWin.mainloop()
