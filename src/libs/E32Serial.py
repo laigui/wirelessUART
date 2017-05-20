@@ -16,7 +16,7 @@ else:
 class E32(aSerial):
     """A class implementation for E32 from CDEBYTE"""
     def __init__(self, port, inHex=False):
-        super(E32, self).__init__(port=port, inHex=inHex, baudrate=9600, timeout=5.0, bytesize=8,
+        super(E32, self).__init__(port=port, inHex=inHex, baudrate=9600, timeout=None, bytesize=8,
                  parity='N', stopbits=1, xonxoff=False, rtscts=False)
         # E32 other parameters
         self.baudrate_air = 1200

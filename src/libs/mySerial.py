@@ -14,7 +14,7 @@ from myException import RxTimeOutError
 class aSerial(object):
     """a serial class implementation with additional features"""
     def __init__(self, port, baudrate=9600,
-                 timeout=5.0, bytesize=serial.EIGHTBITS,
+                 timeout=None, bytesize=serial.EIGHTBITS,
                  parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                  xonxoff=False, rtscts=False, inHex=False):
         self.logger = logging.getLogger("myLogger.aSerial")
@@ -82,29 +82,33 @@ class aSerial(object):
         rx_cnt = 0
         timeout = 0
         if self.isOpen == True:
-            if n == 0:
-                rxStr = self.sp.read(self.sp.inWaiting())
+            try:
+                if n == 0:
+                    rxStr = self.sp.read(self.sp.inWaiting())
+                else:
+                    while rx_cnt < n:
+                        rxn = self.sp.inWaiting()
+                        left = n - rxn - rx_cnt
+                        if left >= 0:
+                            rxStr = rxStr + self.sp.read(rxn)
+                            rx_cnt = rx_cnt + rxn
+                            timeout += 1
+                            if timeout > s:
+                                raise RxTimeOutError(rxStr, n, s)
+                        else:
+                            rxStr = rxStr + self.sp.read(n - rx_cnt)
+                            rx_cnt = n
+                        sleep(1)
+            except (serial.SerialTimeoutException, serial.SerialException)as e:
+                self.logger.error("serial read error!")
+                self.logger.error(e)
             else:
-                while rx_cnt < n:
-                    rxn = self.sp.inWaiting()
-                    left = n - rxn - rx_cnt
-                    if left >= 0:
-                        rxStr = rxStr + self.sp.read(rxn)
-                        rx_cnt = rx_cnt + rxn
-                        timeout += 1
-                        if timeout > s:
-                            raise RxTimeOutError(rxStr, n, s)
-                    else:
-                        rxStr = rxStr + self.sp.read(n - rx_cnt)
-                        rx_cnt = n
-                    sleep(1)
-
-            if self.inHex:
-                aStr = binascii.hexlify(rxStr)
-            else:
-                aStr = rxStr
-            self.rx_cnt += len(rxStr)
-            self.logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
+                if self.inHex:
+                    aStr = binascii.hexlify(rxStr)
+                else:
+                    aStr = rxStr
+                self.rx_cnt += len(rxStr)
+                self.logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
         return aStr
 
     def transmit(self, aStr):
@@ -121,8 +125,9 @@ class aSerial(object):
                 bStr = aStr
             try:
                 self.sp.write(bStr)
-            except serial.SerialTimeoutException:
+            except serial.SerialTimeoutException as e:
                 self.logger.error("serial write error!")
+                self.logger.error(e)
             else:
                 self.tx_cnt += tx_cnt
                 self.logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)
