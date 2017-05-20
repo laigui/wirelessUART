@@ -89,7 +89,10 @@ class E32(aSerial):
 
 
 if __name__ == "__main__":
-    port = '/dev/ttyUSB0'
+    if ISRPI:
+        port = '/dev/ttyS0'
+    else:
+        port = '/dev/ttyUSB0'
     ser = E32(port=port, inHex=False)
     ser.open()
     ser.reset()
