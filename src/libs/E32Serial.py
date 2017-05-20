@@ -95,7 +95,6 @@ if __name__ == "__main__":
         port = '/dev/ttyUSB0'
     ser = E32(port=port, inHex=False)
     ser.open()
-    ser.reset()
     print ser.get_version()
     print ser.get_config()
     ser.close()

@@ -81,9 +81,7 @@ class MyTest(object):
         self.data = PacketGen(min_len=self._pkt_min_len, max_len=self._pkt_max_len)
 
     def test_init(self):
-        if self.ser.open():
-            #pull out gabage bytes in RX FIFO
-            self.ser.reset()
+        return self.ser.open()
 
     def toGUI(self):
         message = self.gui_log.get(True)
@@ -93,7 +91,9 @@ class MyTest(object):
     def start_tx(self, loop):
         if self.inTest == False:
             self.logger.debug('Start TX...')
-            self.test_init()
+            if self.test_init() == False:
+                self.logger.error('Start Tx Failed')
+                return
             self.inTest = True
             self.start_rx()
             self._loop = loop
@@ -134,7 +134,6 @@ class MyTest(object):
             self._rx_ok_cnt = 0
             self._str_txed = ''
             self._str_rxed = ''
-            self.ser.reset()
             self.ser.close()
 
 

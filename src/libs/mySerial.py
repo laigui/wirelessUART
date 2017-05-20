@@ -52,6 +52,7 @@ class aSerial(object):
             if self.sp.isOpen():
                 self.logger.debug("%s is opened", self.port)
                 self.isOpen = True
+                self._reset()
             return True
         else:
             self.logger.error("Serial port is NULL")
@@ -63,10 +64,9 @@ class aSerial(object):
             self.sp.close()
             self.logger.debug("%s is closed", self.port)
 
-    def reset(self):
+    def _reset(self):
         self.tx_cnt = 0
         self.sp.flushOutput()
-        self.sp.read(self.sp.inWaiting())
         self.rx_cnt = 0
         self.sp.flushInput()
 
