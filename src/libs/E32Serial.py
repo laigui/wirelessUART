@@ -6,6 +6,9 @@ __author__ = 'Wei'
 from mySerial import aSerial
 import binascii
 import time
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 import os
 if os.uname()[4].find('arm') == 0:
     import RPi.GPIO as GPIO
@@ -81,7 +84,7 @@ class E32(aSerial):
         while self.get_AUX() == False:
             cnt += 1
             if cnt >= self.AUX_timeout:
-                self.logger.error("can't get AUX high before sending data to E32!")
+                logger.error("can't get AUX high before sending data to E32!")
                 break
             time.sleep(1)
         else:

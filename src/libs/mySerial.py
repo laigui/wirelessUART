@@ -7,9 +7,11 @@ import traceback
 import serial
 import binascii
 import tkMessageBox
-import logging
 from time import sleep
 from myException import RxTimeOutError
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 class aSerial(object):
     """a serial class implementation with additional features"""
@@ -17,7 +19,6 @@ class aSerial(object):
                  timeout=None, bytesize=serial.EIGHTBITS,
                  parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                  xonxoff=False, rtscts=False, inHex=False):
-        self.logger = logging.getLogger("myLogger.aSerial")
         # serial control parameters
         self.isOpen = False
         self.inHex = inHex
@@ -47,22 +48,22 @@ class aSerial(object):
                                         xonxoff=self.xonxoff, rtscts=self.rtscts,
                                         dsrdtr=False)
             except serial.SerialException:
-                self.logger.error("Serial open failed!")
+                logger.error("Serial open failed!")
                 return False
             if self.sp.isOpen():
-                self.logger.debug("%s is opened", self.port)
+                logger.debug("%s is opened", self.port)
                 self.isOpen = True
                 self._reset()
             return True
         else:
-            self.logger.error("Serial port is NULL")
+            logger.error("Serial port is NULL")
             return False
 
     def close(self):
         self.isOpen = False
         if self.sp:
             self.sp.close()
-            self.logger.debug("%s is closed", self.port)
+            logger.debug("%s is closed", self.port)
 
     def _reset(self):
         self.tx_cnt = 0
@@ -100,15 +101,15 @@ class aSerial(object):
                             rx_cnt = n
                         sleep(1)
             except (serial.SerialTimeoutException, serial.SerialException)as e:
-                self.logger.error("serial read error!")
-                self.logger.error(e)
+                logger.error("serial read error!")
+                logger.error(e)
             else:
                 if self.inHex:
                     aStr = binascii.hexlify(rxStr)
                 else:
                     aStr = rxStr
                 self.rx_cnt += len(rxStr)
-                self.logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
+                logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
         return aStr
 
     def transmit(self, aStr):
@@ -126,8 +127,8 @@ class aSerial(object):
             try:
                 self.sp.write(bStr)
             except serial.SerialTimeoutException as e:
-                self.logger.error("serial write error!")
-                self.logger.error(e)
+                logger.error("serial write error!")
+                logger.error(e)
             else:
                 self.tx_cnt += tx_cnt
-                self.logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)
+                logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)

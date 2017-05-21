@@ -7,8 +7,11 @@ from Tkinter import *
 import Tkinter as tk
 import threading
 from tests.myTest import MyTest
-import logging
 import time
+import json
+import logging
+import logging.config
+logger = logging.getLogger(__name__)
 
 
 class ScrolledText(tk.Frame):
@@ -173,25 +176,47 @@ def on_exit():
     do_stop()
     rootWin.destroy()
 
+# A dictConf example, not in use any more
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'local': {
+            'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'formatter': 'local',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'level': 'DEBUG',
+            'formatter': 'local',
+            'filename': 'chowntest.log',
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console', 'file']
+    },
+}
+
+
 def logger_init():
-    global logger
-    logger = logging.getLogger("myLogger")
-    logger.setLevel(logging.DEBUG)
+    ''' logging configuration in code, which is not in use any more.
+    instead we are using dictConfig.
+    '''
     from time import localtime, strftime
     log_filename = strftime("test-%y%m%d-%H:%M:%S.log", localtime())
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler(log_filename)
-    fh.setLevel(logging.DEBUG)
-    # create console handler with a higher log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
-    fh.setFormatter(formatter)
-    # add the handlers to logger
-    logger.addHandler(ch)
-    logger.addHandler(fh)
+    with open('logging_config.json', 'r') as logging_config_file:
+        #json.dump(LOGGING, logging_config_file)
+        logging_config = json.load(logging_config_file)
+        logging_config['handlers']['file']['filename'] = log_filename
+        logging.config.dictConfig(logging_config)
+
 
 if __name__ == "__main__":
     global t_tx

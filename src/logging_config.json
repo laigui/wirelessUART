@@ -1,0 +1,26 @@
+{
+    "handlers": {
+        "console": {
+            "formatter": "local", 
+            "class": "logging.StreamHandler", 
+            "level": "DEBUG"
+        }, 
+        "file": {
+            "filename": "default.log", 
+            "formatter": "local", 
+            "class": "logging.FileHandler", 
+            "level": "DEBUG"
+        }
+    }, 
+    "version": 1, 
+    "root": {
+        "handlers": ["console", "file"], 
+        "level": "DEBUG"
+    }, 
+    "disable_existing_loggers": false, 
+    "formatters": {
+        "local": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    }
+}
