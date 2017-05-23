@@ -49,7 +49,7 @@ class aSerial(object):
                                         dsrdtr=False)
             except serial.SerialException:
                 logger.error("Serial open failed!")
-                return False
+                raise
             if self.sp.isOpen():
                 logger.debug("%s is opened", self.port)
                 self.isOpen = True
@@ -75,7 +75,7 @@ class aSerial(object):
     def receive(self, n=0, s=0):
         '''
         :param n: n bytes to be received, if n=0, return whatever are received.
-        :param s: s in seconds for timeout
+        :param s: s in seconds for timeout, if s=0, no timeout
         :return: the string received
         '''
         aStr = ''
@@ -93,9 +93,10 @@ class aSerial(object):
                         if left >= 0:
                             rxStr = rxStr + self.sp.read(rxn)
                             rx_cnt = rx_cnt + rxn
-                            timeout += 1
-                            if timeout > s:
-                                raise RxTimeOutError(rxStr, n, s)
+                            if s != 0:
+                                timeout += 1
+                                if timeout > s:
+                                    raise RxTimeOutError(rxStr, n, s)
                         else:
                             rxStr = rxStr + self.sp.read(n - rx_cnt)
                             rx_cnt = n
@@ -129,6 +130,7 @@ class aSerial(object):
             except serial.SerialTimeoutException as e:
                 logger.error("serial write error!")
                 logger.error(e)
+                raise
             else:
                 self.tx_cnt += tx_cnt
                 logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)
