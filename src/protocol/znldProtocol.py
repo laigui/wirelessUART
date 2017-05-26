@@ -1,4 +1,4 @@
-import binascii, ctypes
+import binascii, ctypes, struct
 import threading
 from time import sleep
 
@@ -66,8 +66,9 @@ class Protocol(threading.Thread):
         if self._role == 'Node':
             assert len(message) == 4, 'Node message length is not 4'
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
-        crc32 = hex(int(ctypes.c_uint32(binascii.crc32(tx_str)).value))[2:]
-        tx_str = tx_str + binascii.a2b_hex(crc32)
+        #crc32 = hex(int(ctypes.c_uint32(binascii.crc32(tx_str)).value))[2:]
+        crc32 = struct.pack('>L', ctypes.c_uint32(binascii.crc32(tx_str)).value) # MSB firstly
+        tx_str = tx_str + crc32
         logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
         try:
             self.ser.transmit(tx_str)
@@ -79,15 +80,53 @@ class Protocol(threading.Thread):
                 self._frame_no = 0
         pass
 
-    def recv_message(self):
+    def _recv_frame(self):
+        '''
+        check the frame header and later the checksum, return the whole frame until the checksum is correct.
+        :return: the received frame
+        '''
+        done = False
+        got_header = False
+        rx_str = ''
+        rx_len = self._rx_frame_len
+        while not done:
+            rx_str = rx_str + self.ser.receive(rx_len)  # keep receiving until getting required bytes
+            if not got_header:
+                index = rx_str.find(self.LampControl.FRAME_HEADER)
+                if index == -1:
+                    rx_str = ''
+                else:
+                    got_header = True
+                    rx_str = rx_str[index:]
+                    rx_len = self._rx_frame_len - rx_len + index
+                    logger.debug('Header got')
+            else:
+                rx_crc32 = rx_str[-4 :]
+                str_payload = rx_str[0 : self._rx_frame_len - 5]
+                crc32 = struct.pack('>L', ctypes.c_uint32(binascii.crc32(str_payload)).value)  # MSB firstly
+                if crc32 == rx_crc32:
+                    done = True
+                else:
+                    got_header = False
+                    rx_str = rx_str[2 :]
+                    rx_len = 2
+                    logger.debug('CRC32 check failed, remove Header and continue: %s != %s', rx_crc32, crc32)
+        logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
+        return rx_str
+
+    def _frame_process(self, rx_frame):
+        '''
+        received frame processing per the protocol
+        :param rx_frame: the received frame
+        :return: 
+        '''
         pass
 
     def run(self):
         logger.info('Thread receiving starts running until it is stop on purpose.')
         while not self.thread_stop:
-            rx_str = self.ser.receive(self._rx_frame_len) # keep receiving until getting required bytes
-            logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
-            index = rx_str.find(self.LampControl.FRAME_HEADER)
+            rx_frame = self._recv_frame()
+            self._frame_process(rx_frame)
         pass
 
     def stop(self):

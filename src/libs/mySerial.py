@@ -82,7 +82,7 @@ class aSerial(object):
         rxStr = ''
         rx_cnt = 0
         timeout = 0
-        if self.isOpen == True:
+        if self.isOpen == True and n != 0:
             try:
                 if n == 0:
                     rxStr = self.sp.read(self.sp.inWaiting())
