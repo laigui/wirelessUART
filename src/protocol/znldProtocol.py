@@ -186,8 +186,13 @@ class Protocol(threading.Thread):
                     break
                 else:
                     count += 1
-            except (RxTimeOut, RxNack):
+            except RxTimeOut:
                 count += 1
+            except RxNack:
+                logger.debug('NACK is received')
+                count += 1
+        else:
+            logger.debug('RC didn\'t get expected response from STA')
         pass
 
     def _RC_wait_for_resp(self, tag, timeout):
