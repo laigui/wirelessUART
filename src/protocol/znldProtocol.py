@@ -221,6 +221,7 @@ if __name__ == "__main__":
         ID = '\x00\x00\x00\x00\x00\x03'
     foo = Protocol(id=ID, role=role)
     foo.setName('Thread receiving')
+    foo.setDaemon(True)
     try:
         foo.start()
         sleep(1)
@@ -231,6 +232,6 @@ if __name__ == "__main__":
         foo.stop()
     finally:
         logger.debug('Waiting for thread end')
-        foo.join()
+        foo.join(10)
         logger.debug('End')
     pass
