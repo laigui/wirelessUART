@@ -82,7 +82,7 @@ class Protocol(threading.Thread):
         if self._frame_no == 250:
             self._frame_no = 0
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
-        crc = struct.pack('>L', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
+        crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
         tx_str = tx_str + crc
         logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
         try:
@@ -236,6 +236,6 @@ if __name__ == "__main__":
         foo.stop()
     finally:
         logger.debug('Waiting for thread end')
-        foo.join(10)
+        foo.join(1)
         logger.debug('End')
     pass
