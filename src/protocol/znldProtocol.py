@@ -226,8 +226,6 @@ if __name__ == "__main__":
         sleep(1)
         if role == 'RC':
             foo.RC_lamp_ctrl(STA1_ID, '\x03\xFF\xFF')
-        logger.debug('Stopping Thread')
-        foo.stop()
     except KeyboardInterrupt:
         logger.debug('Stopping Thread by Ctrl-C')
         foo.stop()
