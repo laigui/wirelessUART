@@ -186,7 +186,7 @@ class Protocol(threading.Thread):
                     break
                 else:
                     count += 1
-            except (RxTimeOutError, RxNackError):
+            except (RxTimeOut, RxNack):
                 count += 1
         pass
 
@@ -195,10 +195,10 @@ class Protocol(threading.Thread):
             rx_frame = self._RC_queue.get(True, timeout)
             self._RC_queue.task_done()
         except Queue.Empty:
-            raise RxTimeOutError
+            raise RxTimeOut
         else:
             if rx_frame[15] == self.LampControl.TAG_NACK:
-                raise RxNackError
+                raise RxNack
             elif rx_frame[15] == tag:
                 return True
             else:
