@@ -91,6 +91,13 @@ class Protocol(threading.Thread):
             logger.error('Tx error!')
         pass
 
+    def _forward_frame(self, frame):
+        if self._role == 'RELAY':
+            try:
+                self.ser.transmit(frame)
+            except:
+                logger.error('Tx error!')
+
     def _recv_frame(self):
         '''
         check the frame header and later the checksum, return the whole frame until the checksum is correct.
@@ -139,7 +146,7 @@ class Protocol(threading.Thread):
         sn = ord(rx_frame[14])
         tag = rx_frame[15]
         value = rx_frame[16:19]
-        #if self._role == 'STA':
+
         if dest_id == self._id or dest_id == self.LampControl.BROADCAST_ID:
             if sn > self._frame_no:
                 self._frame_no = sn
@@ -153,6 +160,12 @@ class Protocol(threading.Thread):
                     self._send_message(src_id, self.LampControl.MESG_NACK)
             else:
                 logger.debug('duplicated frame received')
+        else:
+            # do relay if self._role is 'RELAY'
+            if self._role == 'RELAY' and sn > self._frame_no:
+                self._frame_no = sn
+                logger.info('RELAY sn = %s' % str(sn))
+                self._forward_frame(rx_frame)
         pass
 
     def run(self):
@@ -179,6 +192,10 @@ class Protocol(threading.Thread):
         while count < self._retry:
             logger.debug('RC send message %s times' % str(count+1))
             self._send_message(dest_id, mesg)
+            if dest_id == self.LampControl.BROADCAST_ID:
+                # no response is expected on broadcast TX
+                logger.info('Boardcast mesg: %s' % binascii.b2a_hex(mesg))
+                break
             try:
                 if self._RC_wait_for_resp(self.LampControl.TAG_ACK, self._timeout):
                     logger.debug('RC got expected response from STA')
@@ -206,23 +223,32 @@ class Protocol(threading.Thread):
             elif rx_frame[15] == tag:
                 return True
             else:
+                logger.debug('unexpected frame received with TAG %s', hex(ord(tag)))
                 return False
 
 
 
 if __name__ == "__main__":
     logging.basicConfig(level='DEBUG')
+
     role = 'RC'
     #role = 'STA'
     #role = 'RELAY'
+
+    if role == 'RC':
+        delay = 1
+    else:
+        delay = 10
+
+    STA1_ID = '\x00\x00\x00\x00\x00\x02'
+    STA2_ID = '\x00\x00\x00\x00\x00\x03'
     if role == 'RC':
         ID = '\x00\x00\x00\x00\x00\x01'
-        STA1_ID = '\x00\x00\x00\x00\x00\x02'
-        STA2_ID = '\x00\x00\x00\x00\x00\x02'
     elif role == 'STA':
-        ID = '\x00\x00\x00\x00\x00\x02'
+        ID = STA1_ID
     elif role == 'RELAY':
-        ID = '\x00\x00\x00\x00\x00\x03'
+        ID = STA2_ID
+
     foo = Protocol(id=ID, role=role)
     foo.setName('Thread receiving')
     foo.setDaemon(True)
@@ -236,6 +262,6 @@ if __name__ == "__main__":
         foo.stop()
     finally:
         logger.debug('Waiting for thread end')
-        foo.join(1)
+        foo.join(delay)
         logger.debug('End')
     pass
