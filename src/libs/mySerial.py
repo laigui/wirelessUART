@@ -74,7 +74,7 @@ class aSerial(object):
 
     def receive(self, n=0, s=0):
         '''
-        :param n: n bytes to be received, if n=0, return whatever are received.
+        :param n: n bytes to be received, if n=-1, return whatever are received, if n=0, return nothing.
         :param s: s in seconds for timeout, if s=0, no timeout
         :return: the string received
         '''
@@ -84,7 +84,7 @@ class aSerial(object):
         timeout = 0
         if self.isOpen == True and n != 0:
             try:
-                if n == 0:
+                if n == -1:
                     rxStr = self.sp.read(self.sp.inWaiting())
                 else:
                     while rx_cnt < n:

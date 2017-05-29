@@ -41,6 +41,7 @@ class E32(aSerial):
             self.set_E32_mode(0)
 
     def __del__(self):
+        super(E32, self).__del__()
         if ISRPI:
             GPIO.cleanup()
 
@@ -53,22 +54,38 @@ class E32(aSerial):
                 GPIO.output(self.GPIO_M0, GPIO.HIGH)
                 GPIO.output(self.GPIO_M1, GPIO.HIGH)
 
-    def get_version(self):
+    def get_version(self, inHex=True):
         cmd_str = '\xC3\xC3\xC3'
-        ser.set_E32_mode(3)
         self.transmit(cmd_str)
         time.sleep(1)
-        return binascii.hexlify(self.receive())
+        if inHex:
+            return self.receive(n=4)
+        else:
+            return binascii.hexlify(self.receive(n=4))
 
-    def get_config(self):
+    def get_config(self, inHex=True):
         cmd_str = '\xC1\xC1\xC1'
-        ser.set_E32_mode(3)
         self.transmit(cmd_str)
         time.sleep(1)
-        return binascii.hexlify(self.receive())
+        if inHex:
+            return self.receive(n=6)
+        else:
+            return binascii.hexlify(self.receive(n=6))
 
-    def set_config(self):
-        pass
+    def set_config(self, config=None):
+        ''' set config to the default: 9600bps for uart and air, addr=1, channel=1
+        10dbm, FEC on, transparent TX, push-pull IO, 250ms wakeup time
+        '''
+        if config == None:
+            default_config = '\xc0\x00\x01\x1c\x01\x47'
+        else:
+            default_config = config
+        self.transmit(default_config)
+        time.sleep(1)
+        if self.get_config() == default_config:
+            logger.info('set config successfully')
+        else:
+            logger.error('set config failed')
 
     def get_AUX(self):
         if ISRPI:
@@ -92,12 +109,17 @@ class E32(aSerial):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level='DEBUG')
     if ISRPI:
         port = '/dev/ttyS0'
     else:
         port = '/dev/ttyUSB0'
     ser = E32(port=port, inHex=False)
     ser.open()
-    print ser.get_version()
-    print ser.get_config()
+    ser.set_E32_mode(3)
+    print ser.get_version(inHex=False)
+    print ser.get_config(inHex=False)
+    ser.set_config()
+    print ser.get_config(inHex=False)
+    ser.set_E32_mode(0)
     ser.close()
