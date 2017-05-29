@@ -50,8 +50,8 @@ class Protocol(threading.Thread):
         self._timeout = timeout # in seconds
         self._retry = retry
         self._RC_queue = Queue.Queue(0) # create no limited queue
-        self._role = role # three roles: 'RC', 'STA', 'Relay'
-        assert role=='RC' or role=='STA' or role=='Relay', 'Protocol role mistake!'
+        self._role = role # three roles: 'RC', 'STA', 'RELAY'
+        assert role=='RC' or role=='STA' or role=='RELAY', 'Protocol role mistake!'
         self._id = id
         self._tx_frame_len = 21
         if self._role == 'RC':
