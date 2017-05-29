@@ -238,7 +238,7 @@ if __name__ == "__main__":
     if role == 'RC':
         delay = 1
     else:
-        delay = 10
+        delay = 30
 
     STA1_ID = '\x00\x00\x00\x00\x00\x02'
     STA2_ID = '\x00\x00\x00\x00\x00\x03'
