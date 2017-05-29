@@ -53,11 +53,11 @@ class Protocol(threading.Thread):
         self._role = role # three roles: 'RC', 'STA', 'Relay'
         assert role=='RC' or role=='STA' or role=='Relay', 'Protocol role mistake!'
         self._id = id
-        self._tx_frame_len = 23
+        self._tx_frame_len = 21
         if self._role == 'RC':
-            self._rx_frame_len = 23
+            self._rx_frame_len = 21
         elif self._role == 'STA':
-            self._rx_frame_len = 23
+            self._rx_frame_len = 21
         if ISRPI:
             port = '/dev/ttyS0'
         else:
@@ -82,8 +82,8 @@ class Protocol(threading.Thread):
         if self._frame_no == 250:
             self._frame_no = 0
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
-        crc32 = struct.pack('>L', ctypes.c_uint32(binascii.crc32(tx_str)).value) # MSB firstly
-        tx_str = tx_str + crc32
+        crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
+        tx_str = tx_str + crc
         logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
         try:
             self.ser.transmit(tx_str)
@@ -111,11 +111,10 @@ class Protocol(threading.Thread):
                     rx_str = rx_str[index:]
                     rx_len = self._rx_frame_len - rx_len + index
             else:
-                rx_crc32 = rx_str[-4 :]
-                str_payload = rx_str[0 : self._rx_frame_len-4]
-                crc32 = struct.pack('>L', ctypes.c_uint32(binascii.crc32(str_payload)).value)  # MSB firstly
-
-                if crc32 == rx_crc32:
+                rx_crc = rx_str[-2 :]
+                str_payload = rx_str[0 : self._rx_frame_len-2]
+                crc = struct.pack('>L', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
+                if crc == rx_crc:
                     done = True
                 else:
                     got_header = False
@@ -123,9 +122,9 @@ class Protocol(threading.Thread):
                     rx_len = 2
                     logger.debug('A frame is received: %s', binascii.b2a_hex(rx_str))
                     logger.debug('Payload: %s', binascii.b2a_hex(str_payload))
-                    logger.debug('RX crc32: %s', binascii.b2a_hex(rx_crc32))
-                    logger.debug('calculated CRC32: %s', binascii.b2a_hex(crc32))
-                    logger.debug('CRC32 check failed, remove Header and continue')
+                    logger.debug('RX CRC: %s', binascii.b2a_hex(rx_crc))
+                    logger.debug('calculated CRC: %s', binascii.b2a_hex(crc))
+                    logger.debug('CRC check failed, remove Header and continue')
         logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
         return rx_str
 
@@ -237,6 +236,6 @@ if __name__ == "__main__":
         foo.stop()
     finally:
         logger.debug('Waiting for thread end')
-        foo.join(10)
+        foo.join(1)
         logger.debug('End')
     pass
