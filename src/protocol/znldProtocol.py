@@ -56,7 +56,7 @@ class Protocol(threading.Thread):
         self._tx_frame_len = 21
         if self._role == 'RC':
             self._rx_frame_len = 21
-        elif self._role == 'STA':
+        elif self._role == 'STA' or self._role == 'RELAY':
             self._rx_frame_len = 21
         if ISRPI:
             port = '/dev/ttyS0'
@@ -120,7 +120,7 @@ class Protocol(threading.Thread):
             else:
                 rx_crc = rx_str[-2 :]
                 str_payload = rx_str[0 : self._rx_frame_len-2]
-                crc = struct.pack('>L', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
+                crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
                 if crc == rx_crc:
                     done = True
                 else:
