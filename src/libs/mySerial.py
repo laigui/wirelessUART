@@ -3,10 +3,8 @@
 
 __author__ = 'Wei'
 
-import traceback
 import serial
 import binascii
-import tkMessageBox
 from time import sleep
 from myException import RxTimeOutError
 import logging
@@ -119,10 +117,9 @@ class aSerial(object):
             if self.inHex:
                 try:
                     bStr = binascii.unhexlify(aStr)
-                except:
-                    traceback.print_exc()
-                    tkMessageBox.showinfo("Input Error", "Need Even-length string for transmition in HEX mode!")
-                    return
+                except TypeError:
+                    logger.error("Input Error: need Even-length string for transmition in HEX mode!")
+                    raise
             else:
                 bStr = aStr
             try:
