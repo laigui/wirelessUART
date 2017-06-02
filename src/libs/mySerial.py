@@ -47,7 +47,8 @@ class aSerial(object):
                                         dsrdtr=False)
             except serial.SerialException:
                 logger.error("Serial open failed!")
-                raise
+                self.isOpen = False
+                return False
             if self.sp.isOpen():
                 logger.debug("%s is opened", self.port)
                 self.isOpen = True
