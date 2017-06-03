@@ -26,13 +26,15 @@ class Protocol(threading.Thread):
         BYTE_ALL_ON = '\x03'
         BYTE_LEFT_ON = '\x01'
         BYTE_RIGHT_ON = '\x02'
+        TAG_SN = '\x00'
         TAG_ACK = '\x01'
         TAG_NACK = '\x02'
         TAG_LAMP_CTRL = '\x05'
         TAG_POLL = '\x03'
         TAG_POLL_ACK = '\x04'
 
-        TAG_DICT = {TAG_ACK: 'ACK/',
+        TAG_DICT = {TAG_SN: 'SN update',
+                    TAG_ACK: 'ACK',
                     TAG_NACK: 'NACK',
                     TAG_LAMP_CTRL: 'Lamp control',
                     TAG_POLL: 'Poll',
@@ -43,6 +45,7 @@ class Protocol(threading.Thread):
         MESG_ACK = TAG_ACK + BYTE_RESERVED * 3
         MESG_NACK = TAG_NACK + BYTE_RESERVED * 3
         MESG_POLL = TAG_POLL + BYTE_RESERVED * 3
+        MESG_NULL = BYTE_RESERVED * 4
         pass
 
     def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600):
@@ -91,7 +94,9 @@ class Protocol(threading.Thread):
             assert len(message) == 4, 'STA message length is not 4'
         self._frame_no += 1
         if self._frame_no == 25:
-            self._frame_no = 0
+            self._frame_no = -1
+            logger.debug('broadcast sn update frame')
+            self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
         crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
         tx_str = tx_str + crc
@@ -161,7 +166,7 @@ class Protocol(threading.Thread):
 
         if dest_id == self._id or dest_id == self.LampControl.BROADCAST_ID:
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
-            if sn > self._frame_no or sn == 0:
+            if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
                 update_frame_no = True
                 self._frame_no = sn
                 if self.LampControl.TAG_DICT.has_key(tag):
@@ -192,7 +197,7 @@ class Protocol(threading.Thread):
                 logger.info('RELAY sn = %s' % str(sn))
                 self._forward_frame(rx_frame)
             else:
-                if sn > self._frame_no or sn == 0:
+                if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
                     update_frame_no = True
                     self._frame_no = sn
                     logger.info('RELAY sn = %s' % str(sn))
@@ -302,7 +307,7 @@ class Protocol(threading.Thread):
             self._send_message(dest_id, mesg)
             if dest_id == self.LampControl.BROADCAST_ID:
                 # no response is expected on broadcast TX
-                logger.info('Boardcast mesg: %s' % binascii.b2a_hex(mesg))
+                logger.info('Broadcast mesg: %s' % binascii.b2a_hex(mesg))
                 return True
             try:
                 (result, data) = self._RC_wait_for_resp(self.LampControl.TAG_ACK, self._timeout)
