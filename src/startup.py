@@ -69,7 +69,7 @@ if __name__ == "__main__":
                             results += name + '(1), '
                         else:
                             results += name + '(0), '
-                    logger.info('***** loop = %s: %s*****' % repr(loop), results)
+                    logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
                         led_ctrl = 0x3
