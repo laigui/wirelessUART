@@ -74,6 +74,9 @@ if __name__ == "__main__":
             except KeyboardInterrupt:
                 logger.debug('Stopping Thread by Ctrl-C')
                 rc.stop()
+            except:
+                import traceback
+                traceback.print_exc()
             finally:
                 logger.debug('Waiting for thread end')
                 rc.join()
@@ -92,6 +95,9 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             logger.debug('Stopping Thread by Ctrl-C')
             sta.stop()
+        except:
+            import traceback
+            traceback.print_exc()
         finally:
             logger.debug('Waiting for thread end')
             sta.join()
@@ -108,6 +114,9 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             logger.debug('Stopping Thread by Ctrl-C')
             relay.stop()
+        except:
+            import traceback
+            traceback.print_exc()
         finally:
             logger.debug('Waiting for thread end')
             relay.join()
