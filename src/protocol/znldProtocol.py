@@ -60,7 +60,7 @@ class Protocol(threading.Thread):
             self._rx_frame_len = 21
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -1
-        self._led_status = '\x0'
+        self._led_status = '\x00'
 
         self._GPIO_LED = 21
         if ISRPI:
