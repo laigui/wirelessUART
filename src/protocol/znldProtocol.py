@@ -220,19 +220,25 @@ class Protocol(threading.Thread):
         pass
 
     def _RC_wait_for_resp(self, tag, timeout):
-        try:
-            rx_frame = self._RC_queue.get(True, timeout)
-            self._RC_queue.task_done()
-        except Queue.Empty:
-            raise RxTimeOut
-        else:
-            if rx_frame[15] == self.LampControl.TAG_NACK:
-                raise RxNack
-            elif rx_frame[15] == tag:
-                return (True, rx_frame[15:18])
+        result = False
+        while result == False:
+            try:
+                rx_frame = self._RC_queue.get(True, timeout)
+                self._RC_queue.task_done()
+            except Queue.Empty:
+                raise RxTimeOut
             else:
-                logger.debug('unexpected frame received with TAG %s', hex(ord(tag)))
-                return (False, rx_frame[15:18])
+                rx_sn = rx_frame[14]
+                rx_tag = rx_frame[15]
+                if rx_sn > self._frame_no:
+                    if rx_tag == self.LampControl.TAG_NACK:
+                        raise RxNack
+                    elif rx_tag == tag:
+                        result = True
+                    else:
+                        logger.debug('unexpected frame received with TAG %s', binascii.b2a_hex(rx_tag))
+                        break
+        return (result, rx_frame[15:18])
 
     def RC_unicast_poll(self, dest_id, expected):
         '''
