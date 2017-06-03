@@ -238,6 +238,7 @@ class Protocol(threading.Thread):
                 rx_tag = rx_frame[15]
                 if rx_src_id == src_id and rx_dest_id == self._id:
                     if rx_sn > self._frame_no:
+                        self._frame_no = rx_sn
                         if rx_tag == self.LampControl.TAG_NACK:
                             raise RxNack
                         elif rx_tag == tag:
