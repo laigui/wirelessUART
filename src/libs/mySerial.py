@@ -109,7 +109,7 @@ class aSerial(object):
                 else:
                     aStr = rxStr
                 self.rx_cnt += len(rxStr)
-                logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
+                #logger.debug("RX (%d/%d bytes): %s", len(rxStr), self.rx_cnt, aStr)
         return aStr
 
     def transmit(self, aStr):
@@ -131,4 +131,4 @@ class aSerial(object):
                 raise
             else:
                 self.tx_cnt += tx_cnt
-                logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)
+                #logger.debug("TX (%d/%d bytes): %s", tx_cnt, self.tx_cnt, bStr)

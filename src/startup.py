@@ -5,6 +5,7 @@ __author__ = 'Wei'
 
 from znldProtocol import Protocol
 
+import binascii
 from time import sleep
 import json
 import logging
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 
     try:
         role = node_config['role'].strip().upper()
-        id = node_config['id'].strip().upper()
+        id = binascii.a2b_hex(node_config['id'].strip())
     except KeyError:
         logger.error('key errors (role, id) in configuration')
         exit(-1)
@@ -63,7 +64,7 @@ if __name__ == "__main__":
                     rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
                     logger.info('poll led status from each STA:')
                     for (id, name) in stations.items():
-                        if rc.RC_unicast_poll(id, chr(led_ctrl)):
+                        if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
                             logger.info('%s (%s) response successfully' % (name, id))
                     loop += 1
                     if led_ctrl == 0x0:

@@ -78,10 +78,9 @@ class Protocol(threading.Thread):
 
         self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 3
         logger.info('%s (%s) initialization done with timeout = %s seconds'
-                    % (self._role, self._id, repr(self._timeout)))
+                    % (self._role, binascii.b2a_hex(self._id), repr(self._timeout)))
 
     def __del__(self):
-        self.ser.close()
         if ISRPI:
             GPIO.cleanup()
 
