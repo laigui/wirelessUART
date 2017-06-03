@@ -60,7 +60,7 @@ class Protocol(threading.Thread):
             self._rx_frame_len = 21
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -1
-        self._led_status = 0
+        self._led_status = '\x0'
 
         self._GPIO_LED = 21
         if ISRPI:
@@ -174,7 +174,7 @@ class Protocol(threading.Thread):
                             logger.debug('no ACK to broadcast')
                     elif tag == self.LampControl.TAG_POLL:
                         logger.debug('got TAG_POLL')
-                        MESG_POLL_ACK = self.LampControl.TAG_POLL_ACK + chr(self._led_status) \
+                        MESG_POLL_ACK = self.LampControl.TAG_POLL_ACK + self._led_status \
                                         + self.LampControl.BYTE_RESERVED * 2
                         self._send_message(src_id, MESG_POLL_ACK)
                 else:
@@ -208,16 +208,15 @@ class Protocol(threading.Thread):
         self.thread_stop = True
 
     def _STA_do_lamp_ctrl(self, value):
-        if value[0] == 0x3:
+        if value[0] == '\x03':
             logger.info('LED ALL ON')
-            self._led_status = 0x3
             if ISRPI:
                 GPIO.output(self._GPIO_LED, GPIO.LOW)
         else:
             logger.info('LED ALL OFF')
-            self._led_status = 0x0
             if ISRPI:
                 GPIO.output(self._GPIO_LED, GPIO.HIGH)
+        self._led_status = value[0]
         pass
 
     def _RC_wait_for_resp(self, tag, timeout):
