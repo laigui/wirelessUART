@@ -163,6 +163,7 @@ class Protocol(threading.Thread):
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if sn > self._frame_no or sn == 0:
                 update_frame_no = True
+                self._frame_no = sn
                 if self.LampControl.TAG_DICT.has_key(tag):
                     # need to deal with different protocol TAG here
                     if tag == self.LampControl.TAG_LAMP_CTRL:
@@ -187,13 +188,15 @@ class Protocol(threading.Thread):
         # do relay if self._role is 'RELAY'
         if self._role == 'RELAY' and dest_id != self._id:
             logger.debug('RELAY: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
-            if sn > self._frame_no or sn == 0:
-                update_frame_no = True
+            if update_frame_no: # handle broadcast frame again
                 logger.info('RELAY sn = %s' % str(sn))
                 self._forward_frame(rx_frame)
-
-        if update_frame_no:
-            self._frame_no = sn
+            else:
+                if sn > self._frame_no or sn == 0:
+                    update_frame_no = True
+                    self._frame_no = sn
+                    logger.info('RELAY sn = %s' % str(sn))
+                    self._forward_frame(rx_frame)
         pass
 
     def run(self):
