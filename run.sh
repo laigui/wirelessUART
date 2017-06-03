@@ -1,2 +1,2 @@
 cd src
-PYTHONPATH=. python2 protocol/znldProtocol.py
+PYTHONPATH=. python2 startup.py

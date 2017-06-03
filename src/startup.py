@@ -3,7 +3,7 @@
 
 __author__ = 'Wei'
 
-from znldProtocol import Protocol
+from protocol.znldProtocol import Protocol
 
 from time import sleep
 import json
@@ -86,6 +86,8 @@ if __name__ == "__main__":
         sta.setDaemon(True)
         try:
             sta.start()
+            while True:
+                sleep(1)
         except KeyboardInterrupt:
             logger.debug('Stopping Thread by Ctrl-C')
             sta.stop()
@@ -100,6 +102,8 @@ if __name__ == "__main__":
         relay.setDaemon(True)
         try:
             relay.start()
+            while True:
+                sleep(1)
         except KeyboardInterrupt:
             logger.debug('Stopping Thread by Ctrl-C')
             relay.stop()
