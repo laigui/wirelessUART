@@ -3,6 +3,9 @@
 
 __author__ = 'Wei'
 
+from znldProtocol import Protocol
+
+from time import sleep
 import json
 import logging
 import logging.config
@@ -33,23 +36,77 @@ if __name__ == "__main__":
     except KeyError:
         logger.error('key errors (role, id) in configuration')
         exit(-1)
+
     if role == 'RC':
-        logger.debug('role is RC')
+        hop = node_config['hop']
+        e32_baudrate = node_config['e32']['baudrate']
+        stations = node_config['stations']
         try:
             gui = node_config['gui'].strip().upper()
         except KeyError:
             gui = 'YES'
+
         if gui == 'NO':
             logger.debug('running in non-GUI mode')
+            rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
+            rc.setName('Thread RC receiving')
+            rc.setDaemon(True)
+            try:
+                rc.start()
+                sleep(1)
+                loop = 0
+                led_ctrl = 0x3
+                while loop < 10:
+                    logger.info('***** loop = %s *****' % repr(loop))
+                    mesg = chr(led_ctrl) + '\xFF\xFF'
+                    logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
+                    rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
+                    logger.info('poll led status from each STA:')
+                    for (id, name) in stations.items():
+                        if rc.RC_unicast_poll(id, chr(led_ctrl)):
+                            logger.info('%s (%s) response successfully' % (name, id))
+                    loop += 1
+                    if led_ctrl == 0x0:
+                        led_ctrl = 0x3
+                    else:
+                        led_ctrl = 0x0
+            except KeyboardInterrupt:
+                logger.debug('Stopping Thread by Ctrl-C')
+                rc.stop()
+            finally:
+                logger.debug('Waiting for thread end')
+                rc.join()
+                logger.debug('End')
         else:
             logger.debug('running in GUI mode')
 
-        stations = node_config['stations']
-        for (id, name) in stations.items():
-            logger.debug('%s: %s' % (id, name))
     elif role == 'STA':
-        logger.debug('role is STA')
+        sta = Protocol(id=id, role=role)
+        sta.setName('Thread STA receiving')
+        sta.setDaemon(True)
+        try:
+            sta.start()
+        except KeyboardInterrupt:
+            logger.debug('Stopping Thread by Ctrl-C')
+            sta.stop()
+        finally:
+            logger.debug('Waiting for thread end')
+            sta.join()
+            logger.debug('End')
+
     elif role == 'RELAY':
-        logger.debug('role is RELAY')
+        relay = Protocol(id=id, role=role)
+        relay.setName('Thread STA receiving')
+        relay.setDaemon(True)
+        try:
+            relay.start()
+        except KeyboardInterrupt:
+            logger.debug('Stopping Thread by Ctrl-C')
+            relay.stop()
+        finally:
+            logger.debug('Waiting for thread end')
+            relay.join()
+            logger.debug('End')
+
     else:
         logger.error('role mistake in configuration!')

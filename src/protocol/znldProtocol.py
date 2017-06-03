@@ -45,10 +45,9 @@ class Protocol(threading.Thread):
         MESG_POLL = TAG_POLL + BYTE_RESERVED * 3
         pass
 
-    def __init__(self, id, role='RC', timeout=5, retry=3):
+    def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600):
         threading.Thread.__init__(self)
         self.thread_stop = False
-        self._timeout = timeout # in seconds
         self._retry = retry
         self._RC_queue = Queue.Queue(0) # create no limited queue
         self._role = role # three roles: 'RC', 'STA', 'RELAY'
@@ -76,6 +75,10 @@ class Protocol(threading.Thread):
         self.ser = E32(port=port, inHex=False)
         if self.ser.open() == False:
             self.thread_stop = True
+
+        self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 3
+        logger.info('%s (%s) initialization done with timeout = %s seconds'
+                    % (self._role, self._id, repr(self._timeout)))
 
     def __del__(self):
         self.ser.close()

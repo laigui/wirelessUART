@@ -1,9 +1,9 @@
 {
   "role": "RC",
-  "gui": "YES",
+  "gui": "NO",
   "id": "000000000001",
   "name": "RC_1",
-  "hop": 2,
+  "hop": 1,
   "e32": {
     "baudrate": 9600,
     "address": 1,
