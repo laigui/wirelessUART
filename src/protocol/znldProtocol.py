@@ -95,8 +95,9 @@ class Protocol(threading.Thread):
         self._frame_no += 1
         if self._frame_no == 25:
             self._frame_no = -1
-            logger.debug('broadcast sn update frame')
+            logger.debug('broadcast sn=0 update frame')
             self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
+            self._frame_no = 1
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
         crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
         tx_str = tx_str + crc
