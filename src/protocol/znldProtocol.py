@@ -76,7 +76,7 @@ class Protocol(threading.Thread):
         if self.ser.open() == False:
             self.thread_stop = True
 
-        self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 3
+        self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
         logger.info('%s (%s) initialization done with timeout = %s seconds'
                     % (self._role, binascii.b2a_hex(self._id), repr(self._timeout)))
 
@@ -157,11 +157,12 @@ class Protocol(threading.Thread):
         sn = ord(rx_frame[14])
         tag = rx_frame[15]
         value = rx_frame[16:19]
+        update_frame_no = False
 
         if dest_id == self._id or dest_id == self.LampControl.BROADCAST_ID:
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if sn > self._frame_no or sn == 0:
-                self._frame_no = sn
+                update_frame_no = True
                 if self.LampControl.TAG_DICT.has_key(tag):
                     # need to deal with different protocol TAG here
                     if tag == self.LampControl.TAG_LAMP_CTRL:
@@ -182,14 +183,17 @@ class Protocol(threading.Thread):
                     self._send_message(src_id, self.LampControl.MESG_NACK)
             else:
                 logger.debug('duplicated frame received')
-        else:
-            # do relay if self._role is 'RELAY'
-            if self._role == 'RELAY':
-                logger.debug('RELAY: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
-                if sn > self._frame_no or sn == 0:
-                    self._frame_no = sn
-                    logger.info('RELAY sn = %s' % str(sn))
-                    self._forward_frame(rx_frame)
+
+        # do relay if self._role is 'RELAY'
+        if self._role == 'RELAY' and dest_id != self._id:
+            logger.debug('RELAY: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
+            if sn > self._frame_no or sn == 0:
+                update_frame_no = True
+                logger.info('RELAY sn = %s' % str(sn))
+                self._forward_frame(rx_frame)
+
+        if update_frame_no:
+            self._frame_no = sn
         pass
 
     def run(self):
