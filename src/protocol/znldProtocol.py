@@ -234,7 +234,7 @@ class Protocol(threading.Thread):
             else:
                 rx_src_id = rx_frame[2:8]
                 rx_dest_id = rx_frame[8:14]
-                rx_sn = rx_frame[14]
+                rx_sn = ord(rx_frame[14])
                 rx_tag = rx_frame[15]
                 if rx_src_id == src_id and rx_dest_id == self._id:
                     if rx_sn > self._frame_no:
