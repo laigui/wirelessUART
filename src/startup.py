@@ -3,7 +3,7 @@
 
 __author__ = 'Wei'
 
-from protocol.znldProtocol import Protocol
+from znldProtocol import Protocol
 
 from time import sleep
 import json

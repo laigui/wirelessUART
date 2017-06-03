@@ -1,2 +1,2 @@
 cd src
-PYTHONPATH=. python2 startup.py
+PYTHONPATH=.:./protocol python2 startup.py
