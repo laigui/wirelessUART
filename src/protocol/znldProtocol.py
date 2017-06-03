@@ -208,7 +208,6 @@ class Protocol(threading.Thread):
         self.thread_stop = True
 
     def _STA_do_lamp_ctrl(self, value):
-        logger.debug('%s' % value)
         if value[0] == '\x03':
             logger.info('LED ALL ON')
             if ISRPI:
