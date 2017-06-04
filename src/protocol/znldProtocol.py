@@ -93,7 +93,7 @@ class Protocol(threading.Thread):
         if self._role == 'STA':
             assert len(message) == 4, 'STA message length is not 4'
         self._frame_no += 1
-        if self._frame_no == 25:
+        if self._frame_no == 25 and self._role == 'RC':
             self._frame_no = -1
             logger.debug('broadcast sn=0 update frame')
             self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
