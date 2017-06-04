@@ -59,18 +59,18 @@ class E32(aSerial):
         self.transmit(cmd_str)
         time.sleep(1)
         if inHex:
-            return self.receive(n=4)
+            return self.receive(n=4,s=3)
         else:
-            return binascii.hexlify(self.receive(n=4))
+            return binascii.hexlify(self.receive(n=4,s=3))
 
     def get_config(self, inHex=True):
         cmd_str = '\xC1\xC1\xC1'
         self.transmit(cmd_str)
         time.sleep(1)
         if inHex:
-            return self.receive(n=6)
+            return self.receive(n=6,s=3)
         else:
-            return binascii.hexlify(self.receive(n=6))
+            return binascii.hexlify(self.receive(n=6,s=3))
 
     def set_config(self, config=None):
         ''' set config to the default: 9600bps for uart and air, addr=1, channel=1
