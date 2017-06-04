@@ -129,6 +129,7 @@ class Protocol(threading.Thread):
             rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
             if not got_header:
                 index = rx_str.find(self.LampControl.FRAME_HEADER)
+                logger.critical('index = %s', str(index))
                 if index == -1:
                     rx_str = ''
                 else:
