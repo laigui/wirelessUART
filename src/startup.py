@@ -111,26 +111,27 @@ if __name__ == "__main__":
             rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
             rc.setName('Thread RC receiving')
             rc.setDaemon(True)
+            results = {}
+            for (id, name) in stations.items():
+                results[name] = 0
             try:
                 rc.start()
                 sleep(1)
                 loop = 0
                 led_ctrl = 0x3
-                while loop < 1000:
+                while loop < 10000:
                     results = ''
                     mesg = chr(led_ctrl) + '\xFF\xFF'
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
-                    rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
-                    #rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
+                    #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
+                    rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
                     sleep(2)
-                    #logger.info('poll led status from each STA:')
-                    #for (id, name) in stations.items():
-                    #    if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
-                    #        logger.info('%s (%s) response successfully' % (name, id))
-                    #        results += name + '(1), '
-                    #    else:
-                    #        results += name + '(0), '
-                    #logger.info('***** loop = %s: %s*****' % (repr(loop), results))
+                    logger.info('poll led status from each STA:')
+                    for (id, name) in stations.items():
+                        if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
+                            logger.info('%s (%s) response successfully' % (name, id))
+                            results[name] += 1
+                    logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
                         led_ctrl = 0x3
