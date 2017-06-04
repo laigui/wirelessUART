@@ -89,6 +89,7 @@ class aSerial(object):
                     while rx_cnt < n:
                         rxn = self.sp.inWaiting()
                         left = n - rxn - rx_cnt
+                        logger.critical('rxn=%s, left=%s' % (str(rxn), str(left)))
                         if left >= 0:
                             rxStr = rxStr + self.sp.read(rxn)
                             rx_cnt = rx_cnt + rxn
@@ -99,6 +100,7 @@ class aSerial(object):
                         else:
                             rxStr = rxStr + self.sp.read(n - rx_cnt)
                             rx_cnt = n
+                        logger.critical('rx_cnt= %s' % str(rx_cnt))
                         sleep(1)
             except (serial.SerialTimeoutException, serial.SerialException)as e:
                 logger.error("serial read error!")
