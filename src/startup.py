@@ -61,6 +61,13 @@ class ZNLDApp(Application):
     def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
         '''维修模式灯具状态设计'''
         logger.debug("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
+        if status == 1:
+            mesg = Protocol.LampControl.BYTE_ALL_ON + '\xFF\xFF'
+        else:
+            mesg = Protocol.LampControl.BYTE_ALL_OFF + '\xFF\xFF'
+        station_id = '\x00' * 5 + chr(lamp_num + 2)
+        logger.info('unicast to STA (%s) mesg = %s' % (binascii.b2a_hex(station_id), binascii.b2a_hex(mesg)))
+        self.rc.RC_lamp_ctrl(station_id, mesg)
         pass
 
 
