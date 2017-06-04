@@ -4,6 +4,7 @@
 __author__ = 'Wei'
 
 from znldProtocol import Protocol
+from znldGUI import Application
 
 import binascii
 from time import sleep
