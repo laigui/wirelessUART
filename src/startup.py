@@ -3,8 +3,8 @@
 
 __author__ = 'Wei; Mike'
 
-from znldProtocol import Protocol
-from znldGUI import Application
+from protocol.znldProtocol import Protocol
+from gui.znldGUI import Application
 
 import binascii
 from time import sleep
