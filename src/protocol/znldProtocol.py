@@ -135,7 +135,7 @@ class Protocol(threading.Thread):
                 else:
                     got_header = True
                     rx_str = rx_str[index:]
-                    rx_len = self._rx_frame_len - rx_len + index
+                    rx_len = index
             else:
                 rx_crc = rx_str[-2 :]
                 str_payload = rx_str[0 : self._rx_frame_len-2]
