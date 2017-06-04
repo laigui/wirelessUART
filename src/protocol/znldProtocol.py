@@ -125,11 +125,9 @@ class Protocol(threading.Thread):
         rx_str = ''
         rx_len = self._rx_frame_len
         while not done:
-            logger.critical('rx_len = %s', str(rx_len))
             rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
             if not got_header:
                 index = rx_str.find(self.LampControl.FRAME_HEADER)
-                logger.critical('index = %s', str(index))
                 if index == -1:
                     rx_str = ''
                 else:
