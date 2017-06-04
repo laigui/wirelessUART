@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Wei'
+__author__ = 'Wei; Mike'
 
 from znldProtocol import Protocol
 from znldGUI import Application
@@ -12,6 +12,40 @@ import json
 import logging
 import logging.config
 logger = logging.getLogger(__name__)
+
+class ZNLDApp(Application):
+
+    def __init__(self):
+        self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
+        self.rc.setName('Thread RC receiving')
+        self.rc.setDaemon(True)
+        Application.__init__(self)
+
+    def on_all_lamps_on_button_click(self):
+        '''灯具全部开'''
+        logger.debug('on_all_lamps_on_button_click')
+        pass
+
+    def on_all_lamps_off_button_click(self):
+        '''灯具全部关'''
+        logger.debug('on_all_lamps_off_button_click')
+        pass
+
+    def on_lamp_status_query_button_click(self, lamp_num):
+        '''灯具状态查询'''
+        logger.debug("Lamp #" + str(lamp_num) + " status query on-going")
+        pass
+
+    def on_lamp_status_set_button_click(self, lamp_num):
+        '''灯具状态设置'''
+        logger.debug("Lamp #" + str(lamp_num) + " status set on-going")
+        pass
+
+    def on_lamp_set_slider_move(self, value, lamp_num):
+        '''灯具状态设置'''
+        logger.debug("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
+        pass
+
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.
@@ -88,6 +122,11 @@ if __name__ == "__main__":
                 logger.debug('End')
         else:
             logger.debug('running in GUI mode')
+            # 实例化Application
+            app = ZNLDApp()
+            app.geometry('800x600')
+            # 主消息循环:
+            app.mainloop()
 
     elif role == 'STA':
         sta = Protocol(id=id, role=role)
