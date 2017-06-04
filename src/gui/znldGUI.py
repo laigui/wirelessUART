@@ -91,6 +91,11 @@ class Application(tk.Tk):
         print("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
         pass
 
+    def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
+        '''维修模式灯具状态设计'''
+        print("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
+        pass
+
 
 class StartPage(tk.Frame):
     '''主页'''
@@ -201,16 +206,23 @@ class PageThree(tk.Frame):
         self.labels = []
         self.checks = []
         self.progbars = []
+        v0 = tk.IntVar()
+        v1 = tk.IntVar()
+        v2 = tk.IntVar()
 
         for n in range(len(LAMP_NAME)):
             # create label, checkbotton & progressbar widgets for each lamps
             self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
             self.labels[n].grid(row=n, column=0, padx=10, pady=10)
-            self.checks.append(ttk.Checkbutton(self, style='Lampon.TCheckbutton'))
+            self.checks.append(ttk.Checkbutton(self, style='Lampon.TCheckbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
             self.checks[n].grid(row=n, column=1, padx=10, pady=10)
             self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
                              command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
             self.progbars[n].grid(row=n, column=2)
+
+        self.checks[0].configure(variable=v0, command=lambda: root.on_lamp_status_set_checkbutton_click(0, v0.get()))
+        self.checks[1].configure(variable=v1, command=lambda: root.on_lamp_status_set_checkbutton_click(1, v1.get()))
+        self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
             .place(x=300, y=500)
