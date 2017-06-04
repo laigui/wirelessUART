@@ -58,6 +58,11 @@ class ZNLDApp(Application):
         logger.debug("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
         pass
 
+    def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
+        '''维修模式灯具状态设计'''
+        logger.debug("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
+        pass
+
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.
@@ -138,7 +143,6 @@ if __name__ == "__main__":
             logger.debug('running in GUI mode')
             # 实例化Application
             app = ZNLDApp()
-            app.geometry('800x600')
             # 主消息循环:
             app.mainloop()
 
