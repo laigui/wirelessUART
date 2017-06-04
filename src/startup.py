@@ -14,21 +14,33 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 class ZNLDApp(Application):
-
     def __init__(self):
         self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
         self.rc.setName('Thread RC receiving')
         self.rc.setDaemon(True)
+        self.rc.start()
         Application.__init__(self)
+
+    def __del__(self):
+        logger.debug('Waiting for thread end')
+        self.rc.join()
+        logger.debug('End')
+
 
     def on_all_lamps_on_button_click(self):
         '''灯具全部开'''
-        logger.debug('on_all_lamps_on_button_click')
+        logger.info('on_all_lamps_on_button_click')
+        mesg = Protocol.LampControl.BYTE_ALL_ON + '\xFF\xFF'
+        logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
+        self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
         pass
 
     def on_all_lamps_off_button_click(self):
         '''灯具全部关'''
-        logger.debug('on_all_lamps_off_button_click')
+        logger.info('on_all_lamps_off_button_click')
+        mesg = Protocol.LampControl.BYTE_ALL_OFF + '\xFF\xFF'
+        logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
+        self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
         pass
 
     def on_lamp_status_query_button_click(self, lamp_num):
