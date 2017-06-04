@@ -144,11 +144,11 @@ class Protocol(threading.Thread):
                     got_header = False
                     rx_str = rx_str[2 :]
                     rx_len = 2
-                    logger.debug('A frame is received: %s', binascii.b2a_hex(rx_str))
-                    logger.debug('Payload: %s', binascii.b2a_hex(str_payload))
-                    logger.debug('RX CRC: %s', binascii.b2a_hex(rx_crc))
-                    logger.debug('calculated CRC: %s', binascii.b2a_hex(crc))
-                    logger.debug('CRC check failed, remove Header and continue')
+                    logger.error('A frame is received: %s', binascii.b2a_hex(rx_str))
+                    logger.error('Payload: %s', binascii.b2a_hex(str_payload))
+                    logger.error('RX CRC: %s', binascii.b2a_hex(rx_crc))
+                    logger.error('calculated CRC: %s', binascii.b2a_hex(crc))
+                    logger.error('CRC check failed, remove Header and continue')
         logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
         return rx_str
 
