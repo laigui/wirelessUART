@@ -52,9 +52,9 @@ class Application(tk.Tk):
         self.frames[StartPage].grid_columnconfigure(0, weight=1, minsize=266)
         self.frames[StartPage].grid_columnconfigure(1, weight=1, minsize=266)
         self.frames[StartPage].grid_columnconfigure(2, weight=1, minsize=266)
-        self.frames[StartPage].grid_rowconfigure(0, weight=1, minsize=200)
-        self.frames[StartPage].grid_rowconfigure(1, weight=1, minsize=200)
-        self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=200)
+        self.frames[StartPage].grid_rowconfigure(0, weight=1, minsize=150)
+        self.frames[StartPage].grid_rowconfigure(1, weight=1, minsize=150)
+        self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=150)
 
         self.frames[PageOne].grid_columnconfigure(0, weight=1)
         self.frames[PageOne].grid_columnconfigure(1, weight=1)
