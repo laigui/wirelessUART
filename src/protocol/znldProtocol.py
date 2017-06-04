@@ -78,7 +78,7 @@ class Protocol(threading.Thread):
         self.ser = E32(port=port, inHex=False)
         if self.ser.open() == False:
             self.thread_stop = True
-        else:
+        #else:
             #dump E32 version and configuration, disabled for 1st ver board now
             #self.ser.set_E32_mode(3)
             #logger.info('E32 Version: %s', self.ser.get_version(inHex=False))
