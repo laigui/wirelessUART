@@ -311,7 +311,7 @@ class Protocol(threading.Thread):
                 logger.info('Broadcast mesg: %s' % binascii.b2a_hex(mesg))
                 return True
             try:
-                (result, data) = self._RC_wait_for_resp(self.LampControl.TAG_ACK, self._timeout)
+                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_ACK, timeout=self._timeout)
                 if result:
                     logger.info('RC got TAG_ACK from STA')
                     return True
