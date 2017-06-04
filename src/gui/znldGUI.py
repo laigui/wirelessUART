@@ -68,6 +68,29 @@ class Application(tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()  # 切换，提升当前 tk.Frame z轴顺序（使可见）！！此语句是本程序的点睛之处
 
+    def on_all_lamps_on_button_click(self):
+        '''灯具全部开'''
+        pass
+
+    def on_all_lamps_off_button_click(self):
+        '''灯具全部关'''
+        pass
+
+    def on_lamp_status_query_button_click(self, lamp_num):
+        '''灯具状态查询'''
+        print("Lamp #" + str(lamp_num) + " status query on-going")
+        pass
+
+    def on_lamp_status_set_button_click(self, lamp_num):
+        '''灯具状态设置'''
+        print("Lamp #" + str(lamp_num) + " status set on-going")
+        pass
+
+    def on_lamp_set_slider_move(self, value, lamp_num):
+        '''灯具状态设置'''
+        print("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
+        pass
+
 
 class StartPage(tk.Frame):
     '''主页'''
@@ -92,8 +115,8 @@ class StartPage(tk.Frame):
                   relief=[('pressed', 'groove'),
                           ('!pressed', 'ridge')])
 
-        button1 = ttk.Button(self, text="灯具全部开", style="BIG.TButton", command=self.on_all_lamps_on_button_click)
-        button2 = ttk.Button(self, text="灯具全部关", style="BIG.TButton", command=self.on_all_lamps_off_button_click)
+        button1 = ttk.Button(self, text="灯具全部开", style="BIG.TButton", command=root.on_all_lamps_on_button_click)
+        button2 = ttk.Button(self, text="灯具全部关", style="BIG.TButton", command=root.on_all_lamps_off_button_click)
         button3 = ttk.Button(self, text="灯具状态查询", style="BIG.TButton", state="enabled",
                              command=lambda: root.show_frame(PageOne))
         button4 = ttk.Button(self, text="节能模式一", style="BIG.TButton", state="disabled")
@@ -114,14 +137,6 @@ class StartPage(tk.Frame):
         button8.grid(column=1, row=2)
         button9.grid(column=2, row=2)
 
-    def on_all_lamps_on_button_click(self):
-        '''灯具全部开'''
-        pass
-
-    def on_all_lamps_off_button_click(self):
-        '''灯具全部关'''
-        pass
-
 
 class PageOne(tk.Frame):
     '''灯具状态查询页面'''
@@ -140,18 +155,13 @@ class PageOne(tk.Frame):
 
         for n in range(len(LAMP_NAME)):
             self.buttons.append(ttk.Button(self, text=LAMP_NAME[n], style="Lamp.TButton",
-                             command=lambda: self.on_lamp_status_query_button_click(n)))
+                             command=lambda: root.on_lamp_status_query_button_click(n)))
             self.buttons[n].grid(row=n, column=0)
             self.progbars.append(ttk.Progressbar(self, orient="horizontal"))
             self.progbars[n].grid(row=n, column=1)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
             .place(x=300, y=500)
-
-    def on_lamp_status_query_button_click(self, lamp_num):
-        '''灯具状态查询'''
-        print("Lamp #" + str(lamp_num) + " status query on-going")
-        pass
 
 
 class PageTwo(tk.Frame):
@@ -199,21 +209,11 @@ class PageThree(tk.Frame):
             self.checks.append(ttk.Checkbutton(self, style='Lampon.TCheckbutton'))
             self.checks[n].grid(row=n, column=1, padx=10, pady=10)
             self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
-                             command=lambda x,y=1: self.on_lamp1_set_slider_move(x,y)))
+                             command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
             self.progbars[n].grid(row=n, column=2)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
             .place(x=300, y=500)
-
-    def on_lamp_status_set_button_click(self, lamp_num):
-        '''灯具状态设置'''
-        print("Lamp #" + str(lamp_num) + " status set on-going")
-        pass
-
-    def on_lamp1_set_slider_move(self, value, lamp_num):
-        '''灯具状态设置'''
-        print("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
-        pass
 
 
 class PageFour(tk.Frame):
