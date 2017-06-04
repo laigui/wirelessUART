@@ -167,7 +167,7 @@ class PageOne(tk.Frame):
             self.progbars[n].grid(row=n, column=1)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=500)
+            .place(x=300, y=350)
 
 
 class PageTwo(tk.Frame):
@@ -186,7 +186,8 @@ class PageTwo(tk.Frame):
             self.buttons.append(ttk.Button(self, text=LAMP_NAME[n], style="Lamp.TButton"))
             self.buttons[n].grid(row=n, column=0, padx=10, pady=10)
 
-        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)).place(x=300, y=500)
+        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))\
+            .place(x=300, y=350)
 
 
 class PageThree(tk.Frame):
@@ -226,7 +227,7 @@ class PageThree(tk.Frame):
         self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=500)
+            .place(x=300, y=350)
 
 
 class PageFour(tk.Frame):
@@ -252,7 +253,7 @@ class PageFour(tk.Frame):
         button1.pack(side="top", anchor="nw")
 
         button2 = ttk.Button(self, text="回到主页", style="BIG.TButton",
-                             command=lambda: root.show_frame(StartPage)).place(x=300, y=500)
+                             command=lambda: root.show_frame(StartPage)).place(x=300, y=350)
 
 
 if __name__ == '__main__':
