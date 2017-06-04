@@ -28,6 +28,7 @@ class Application(tk.Tk):
             tk.Tk.__init__(self)
 
         self.wm_title("智能路灯集控 V1.1       江苏天恒智能科技出品")
+        self.geometry('800x480')
 
         try:
             if "nt" == os.name:

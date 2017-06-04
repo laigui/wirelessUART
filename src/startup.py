@@ -143,7 +143,6 @@ if __name__ == "__main__":
             logger.debug('running in GUI mode')
             # 实例化Application
             app = ZNLDApp()
-            app.geometry('800x600')
             # 主消息循环:
             app.mainloop()
 
