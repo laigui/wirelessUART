@@ -79,13 +79,11 @@ class Protocol(threading.Thread):
         if self.ser.open() == False:
             self.thread_stop = True
         else:
-            # dump E32 version and configuration
-            self.ser.set_E32_mode(3)
-            logger.info('E32 Version: %s', self.ser.get_version(inHex=False))
-            logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
-            self.ser.set_config()
-            logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
-            self.ser.set_E32_mode(0)
+            #dump E32 version and configuration, disabled for 1st ver board now
+            #self.ser.set_E32_mode(3)
+            #logger.info('E32 Version: %s', self.ser.get_version(inHex=False))
+            #logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
+            #self.ser.set_E32_mode(0)
 
         self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
         logger.info('%s (%s) initialization done with timeout = %s seconds'
