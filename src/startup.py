@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
                     rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
-                    #sleep(5)
+                    sleep(5) # need to consider network delay here given relay node number
                     logger.info('poll led status from each STA:')
                     for (id, name) in stations.items():
                         if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
