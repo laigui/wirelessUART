@@ -111,6 +111,7 @@ class Protocol(threading.Thread):
         # self._count will increase for every frame for identification
         count_str = struct.pack('>H', self._count)
         tx_str = tx_str[0:len(tx_str)-2] + count_str
+        self._count += 1
 
         crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
         tx_str = tx_str + crc
