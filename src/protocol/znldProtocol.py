@@ -105,7 +105,7 @@ class Protocol(threading.Thread):
             logger.debug('broadcast sn=0 update frame')
             self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
             self._frame_no = 1
-            sleep(self._timeout)
+            sleep(self._timeout) # need to consider network delay here given relay node number
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
         # for testing only, replace the last two bytes of message to self._count
         # self._count will increase for every frame for identification
