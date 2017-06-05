@@ -64,6 +64,7 @@ class Protocol(threading.Thread):
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -1
         self._led_status = '\x00'
+        self._count = 0
 
         self._GPIO_LED = 21
         if ISRPI:
@@ -104,7 +105,13 @@ class Protocol(threading.Thread):
             logger.debug('broadcast sn=0 update frame')
             self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
             self._frame_no = 1
+            sleep(self._timeout)
         tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
+        # for testing only, replace the last two bytes of message to self._count
+        # self._count will increase for every frame for identification
+        count_str = struct.pack('>H', self._count)
+        tx_str = tx_str[0:len(tx_str)-2] + count_str
+
         crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
         tx_str = tx_str + crc
         logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
