@@ -130,7 +130,7 @@ if __name__ == "__main__":
                         if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
                             logger.info('%s (%s) response successfully' % (name, id))
                             results[name] += 1
-                        #sleep(5)
+                        sleep(5) # need to consider network delay here given relay node number
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
