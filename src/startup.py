@@ -131,7 +131,6 @@ if __name__ == "__main__":
                             logger.info('%s (%s) response successfully' % (name, id))
                             results[name] += 1
                         #sleep(5)
-                        raw_input('key to continue...')
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
