@@ -199,12 +199,6 @@ class PageThree(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        style = ttk.Style()
-        style.configure("Lampon.TCheckbutton", foreground='black')
-        style.map('Lampon.TCheckbutton',
-              indicatoron=[('pressed', 'green'),
-                           ('selected', 'green')])
-
         self.labels = []
         self.checks = []
         self.progbars = []
@@ -216,7 +210,7 @@ class PageThree(tk.Frame):
             # create label, checkbotton & progressbar widgets for each lamps
             self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
             self.labels[n].grid(row=n, column=0, padx=10, pady=10)
-            self.checks.append(ttk.Checkbutton(self, style='Lampon.TCheckbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
+            self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='Toolbutton', width=10, padding=10, command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
             self.checks[n].grid(row=n, column=1, padx=10, pady=10)
             self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
                              command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
