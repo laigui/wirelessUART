@@ -5,6 +5,7 @@ __author__ = 'Wei; Mike'
 
 from protocol.znldProtocol import Protocol
 from gui.znldGUI import Application
+from libs.myException import *
 
 import binascii
 from time import sleep
@@ -113,7 +114,10 @@ if __name__ == "__main__":
             rc.setDaemon(True)
             results = {}
             for (id, name) in stations.items():
-                results[name] = 0
+                results[name]['OK'] = 0
+                results[name]['ERR_TAG'] = 0
+                results[name]['ERR_TO'] = 0
+                results[name]['ERR_NACK'] = 0
             try:
                 rc.start()
                 sleep(1)
@@ -127,9 +131,21 @@ if __name__ == "__main__":
                     sleep(5) # need to consider network delay here given relay node number
                     logger.info('poll led status from each STA:')
                     for (id, name) in stations.items():
-                        if rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl)):
+                        try:
+                            rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl))
+                        except RxUnexpectedTag:
+                            logger.error('RC got unexpected TAG_POLL_ACK from STA')
+                            results[name]['ERR_TAG'] += 1
+                        except RxTimeOut:
+                            logger.debug('RC didn\'t get expected response from STA')
+                            results[name]['ERR_TO'] += 1
+                        except RxNack:
+                            logger.error('NACK is received')
+                            results[name]['ERR_NACK'] += 1
+                        else:
+                            logger.info('RC got expected TAG_POLL_ACK from STA')
                             logger.info('%s (%s) response successfully' % (name, id))
-                            results[name] += 1
+                            results[name]['OK'] += 1
                         sleep(5) # need to consider network delay here given relay node number
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1

@@ -289,21 +289,17 @@ class Protocol(threading.Thread):
                 (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_POLL_ACK, timeout=self._timeout)
                 if result:
                     if data[1] == expected:
-                        logger.info('RC got expected TAG_POLL_ACK from STA')
                         return True
                     else:
-                        logger.error('RC got unexpected TAG_POLL_ACK from STA')
-                        return False
+                        raise RxUnexpectedTag
                 else:
                     count += 1
             except RxTimeOut:
                 count += 1
             except RxNack:
-                logger.error('NACK is received')
-                return False
+                raise
         else:
-            logger.debug('RC didn\'t get expected response from STA')
-            return False
+            raise RxTimeOut
         pass
 
     def RC_lamp_ctrl(self, dest_id, value):

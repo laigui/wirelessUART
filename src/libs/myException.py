@@ -14,5 +14,8 @@ class RxNack(Exception):
 class RxTimeOut(Exception):
     pass
 
+class RxUnexpectedTag(Exception):
+    pass
+
 if __name__ == "__main__":
     print RxTimeOutError('abcd',10,5)
