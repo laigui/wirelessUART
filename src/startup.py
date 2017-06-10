@@ -114,10 +114,7 @@ if __name__ == "__main__":
             rc.setDaemon(True)
             results = {}
             for (id, name) in stations.items():
-                results[name]['OK'] = 0
-                results[name]['ERR_TAG'] = 0
-                results[name]['ERR_TO'] = 0
-                results[name]['ERR_NACK'] = 0
+                results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
             try:
                 rc.start()
                 sleep(1)
