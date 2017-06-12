@@ -34,8 +34,8 @@ class Application(tk.Tk):
             if "nt" == os.name:
                 self.wm_iconbitmap(bitmap="logo_48x48.ico")
             else:
-                self.wm_iconbitmap(bitmap="@logo_48x48.xbm")
-        except:
+                self.wm_iconbitmap(bitmap="@gui/logo_48x48.xbm")
+        except tk.TclError:
             print('no icon file found')
 
         container = tk.Frame(self)
