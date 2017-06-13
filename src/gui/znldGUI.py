@@ -20,7 +20,7 @@ LAMP_NAME = ['灯具1', '灯具2', '灯具3']
 
 class Led(tk.Canvas):
     " (indicator) a LED "
-    " color is on_color when halpin is 1, off_color when halpin is 0 "
+    " color is on_color when status is 1, off_color when status is 0 "
 
     def __init__(self, master,
                  halpin="led", off_color="red", on_color="green", size=20, **kw):
@@ -114,8 +114,13 @@ class Application(tk.Tk):
 
     def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
         '''维修模式灯具状态设计'''
-        print("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
+        print("Lamp #" + str(lamp_num) + " checkbotton status = " + str(status))
         pass
+
+    def on_lamp_status_update(self, lamp_num, status):
+        '''状态查询更新灯具状态'''
+        print("Lamp #" + str(lamp_num) + " on/off status = " + str(status))
+        self.frames[PageOne].leds[lamp_num].update(status)
 
 
 class StartPage(tk.Frame):
@@ -178,13 +183,16 @@ class PageOne(tk.Frame):
 
         self.buttons = []
         self.progbars = []
+        self.leds = []
 
         for n in range(len(LAMP_NAME)):
             self.buttons.append(ttk.Button(self, text=LAMP_NAME[n], style="Lamp.TButton",
                              command=lambda: root.on_lamp_status_query_button_click(n)))
             self.buttons[n].grid(row=n, column=0)
+            self.leds.append(Led(self))
+            self.leds[n].grid(row=n, column=1)
             self.progbars.append(ttk.Progressbar(self, orient="horizontal"))
-            self.progbars[n].grid(row=n, column=1)
+            self.progbars[n].grid(row=n, column=2)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
             .place(x=300, y=350)
