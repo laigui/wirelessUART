@@ -18,6 +18,26 @@ LARGE_FONT = ("Verdana", 16)
 LAMP_NAME = ['灯具1', '灯具2', '灯具3']
 
 
+class Led(tk.Canvas):
+    " (indicator) a LED "
+    " color is on_color when halpin is 1, off_color when halpin is 0 "
+
+    def __init__(self, master,
+                 halpin="led", off_color="red", on_color="green", size=20, **kw):
+        tk.Canvas.__init__(self, master, width=size, height=size, bd=0)
+        self.off_color = off_color
+        self.on_color = on_color
+        self.oh = self.create_oval(1, 1, size, size)
+        self.itemconfig(self.oh, fill=off_color)
+        self.halpin = halpin
+
+    def update(self, status):
+        if status == 1:
+            self.itemconfig(self.oh, fill=self.on_color)
+        else:
+            self.itemconfig(self.oh, fill=self.off_color)
+
+
 class Application(tk.Tk):
     '''多页面演示程序'''
 
@@ -206,11 +226,14 @@ class PageThree(tk.Frame):
         v1 = tk.IntVar()
         v2 = tk.IntVar()
 
+        s = ttk.Style()
+        s.configure("CB.Toolbutton", foreground="black", background="white", width=6, padding=6)
+
         for n in range(len(LAMP_NAME)):
             # create label, checkbotton & progressbar widgets for each lamps
             self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
             self.labels[n].grid(row=n, column=0, padx=10, pady=10)
-            self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='Toolbutton', width=10, padding=10, command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
+            self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='CB.Toolbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
             self.checks[n].grid(row=n, column=1, padx=10, pady=10)
             self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
                              command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
