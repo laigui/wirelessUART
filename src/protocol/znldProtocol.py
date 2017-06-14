@@ -97,29 +97,41 @@ class Protocol(threading.Thread):
     def _send_message(self, dest_id, message):
         if self._role == 'RC':
             assert len(message) == 4, 'RC message length is not 4'
+            # have to increase it by 2 to avoid conflicting with STA's response when it isn't received by RC
+            self._frame_no += 2
         if self._role == 'STA':
             assert len(message) == 4, 'STA message length is not 4'
-        self._frame_no += 1
-        if self._frame_no >= 25 and self._role == 'RC':
-            self._frame_no = -1
-            logger.debug('broadcast sn=0 update frame')
-            self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
-            self._frame_no = 1
-            sleep(self._timeout) # need to consider network delay here given relay node number
-        tx_str = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
-        # for testing only, replace the last two bytes of message to self._count
-        # self._count will increase for every frame for identification
-        count_str = struct.pack('>H', self._count)
-        tx_str = tx_str[0:len(tx_str)-2] + count_str
-        self._count += 1
+            self._frame_no += 1
 
-        crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
-        tx_str = tx_str + crc
-        logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
-        try:
-            self.ser.transmit(tx_str)
-        except:
-            logger.error('Tx error!')
+        tx_str_reset_sn = None
+        if self._frame_no >= 25 and self._role == 'RC':
+            self._frame_no = 0
+            tx_str_reset_sn = self.LampControl.FRAME_HEADER + self._id + self.LampControl.BROADCAST_ID\
+                     + chr(self._frame_no) + self.LampControl.MESG_NULL
+            self._frame_no = 1
+        tx_str_message = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
+        if tx_str_reset_sn:
+            tx_str_list = [tx_str_reset_sn, tx_str_message]
+        else:
+            tx_str_list = [tx_str_message]
+
+        for index in (0, 1):
+            # for testing only, replace the last two bytes of message to self._count
+            # self._count will increase for every frame for identification
+            count_str = struct.pack('>H', self._count)
+            tx_str_list[index] = tx_str_list[index][0:len(tx_str_list[index])-2] + count_str
+            self._count += 1
+
+            crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str_list[index], 0xFFFF)).value) # MSB firstly
+            tx_str_list[index] = tx_str_list[index] + crc
+            logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str_list[index])))
+            try:
+                self.ser.transmit(tx_str_list[index])
+            except:
+                logger.error('Tx error!')
+            if index == 0:
+                logger.debug('broadcast sn=0 update frame')
+                sleep(self._timeout)  # need to consider network delay here given relay node number
         pass
 
     def _forward_frame(self, frame):
