@@ -87,11 +87,11 @@ class Protocol(threading.Thread):
             #logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
             #self.ser.set_E32_mode(0)
 
-        self._timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
-        self._relay_delay = 1 # delay x seconds to avoid conflicting with STA response
-        self._relay_random_backoff = 3 # max. random backoff delay to avoid conflicting between RELAYs
+        self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
+        self.relay_delay = 1 # delay x seconds to avoid conflicting with STA response
+        self.relay_random_backoff = 3 # max. random backoff delay to avoid conflicting between RELAYs
         logger.info('%s (%s) initialization done with timeout = %s seconds'
-                    % (self._role, binascii.b2a_hex(self._id), repr(self._timeout)))
+                    % (self._role, binascii.b2a_hex(self._id), repr(self.timeout)))
 
     def __del__(self):
         if ISRPI:
@@ -135,7 +135,7 @@ class Protocol(threading.Thread):
                 logger.error('Tx error!')
             if index == 0 and tx_str_reset_sn:
                 logger.debug('broadcast sn=0 update frame')
-                sleep(self._timeout)  # need to consider network delay here given relay node number
+                sleep(self.timeout)  # need to consider network delay here given relay node number
         pass
 
     def _forward_frame(self, frame):
@@ -226,7 +226,7 @@ class Protocol(threading.Thread):
             logger.debug('RELAY: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if update_frame_no: # handle broadcast frame again
                 # each RELAY need random backoff before TX to avoid E32 RF conflicting
-                sleep(random.sample(range(self._relay_random_backoff + 1), 1)[0])
+                sleep(random.sample(range(self.relay_random_backoff + 1), 1)[0])
                 logger.info('RELAY sn = %s' % str(sn))
                 self._forward_frame(rx_frame)
             else:
@@ -234,9 +234,9 @@ class Protocol(threading.Thread):
                     update_frame_no = True
                     self._frame_no = sn
                     # each RELAY need a fixed delay before random backoff TX to avoid E32 RF conflicting with STA response
-                    sleep(self._relay_delay)
+                    sleep(self.relay_delay)
                     # each RELAY need random backoff before TX to avoid E32 RF conflicting
-                    sleep(random.sample(range(self._relay_random_backoff + 1), 1)[0])
+                    sleep(random.sample(range(self.relay_random_backoff + 1), 1)[0])
                     logger.info('RELAY sn = %s' % str(sn))
                     self._forward_frame(rx_frame)
         pass
@@ -308,7 +308,7 @@ class Protocol(threading.Thread):
             logger.info('RC send message %s times' % str(count + 1))
             self._send_message(dest_id, mesg)
             try:
-                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_POLL_ACK, timeout=self._timeout)
+                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_POLL_ACK, timeout=self.timeout)
                 if result:
                     if data[1] == expected:
                         return True
@@ -343,7 +343,7 @@ class Protocol(threading.Thread):
                 logger.info('Broadcast mesg: %s' % binascii.b2a_hex(mesg))
                 return True
             try:
-                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_ACK, timeout=self._timeout)
+                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_ACK, timeout=self.timeout)
                 if result:
                     logger.info('RC got TAG_ACK from STA')
                     return True

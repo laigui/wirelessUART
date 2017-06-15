@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
                     rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
-                    sleep(5) # need to consider network delay here given relay node number
+                    sleep(5 + rc.relay_random_backoff) # need to consider network delay here given relay node number
                     logger.info('poll led status from each STA:')
                     for (id, name) in stations.items():
                         try:
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                             logger.info('RC got expected TAG_POLL_ACK from STA')
                             logger.info('%s (%s) response successfully' % (name, id))
                             results[name]['OK'] += 1
-                        sleep(5) # need to consider network delay here given relay node number
+                        sleep(5 + rc.relay_delay + rc.relay_random_backoff) # need to consider network delay here given relay node number
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
