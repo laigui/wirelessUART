@@ -16,6 +16,7 @@ except:
 
 LARGE_FONT = ("Verdana", 16)
 LAMP_NAME = ['灯具1', '灯具2', '灯具3']
+LAMP_NUM = 200
 
 
 class Led(tk.Canvas):
@@ -29,7 +30,6 @@ class Led(tk.Canvas):
         self.on_color = on_color
         self.oh = self.create_oval(1, 1, size, size)
         self.itemconfig(self.oh, fill=off_color)
-        self.halpin = halpin
 
     def update(self, status):
         if status == 1:
@@ -117,10 +117,9 @@ class Application(tk.Tk):
         print("Lamp #" + str(lamp_num) + " checkbotton status = " + str(status))
         pass
 
-    def on_lamp_status_update(self, lamp_num, status):
+    def on_lamp_indicator_update(self, lamp_num, status):
         '''状态查询更新灯具状态'''
-        print("Lamp #" + str(lamp_num) + " on/off status = " + str(status))
-        self.frames[PageOne].leds[lamp_num].update(status)
+        self.frames[PageOne].leds[lamp_num-1].update(status)
 
 
 class StartPage(tk.Frame):
@@ -178,21 +177,17 @@ class PageOne(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        style = ttk.Style()
-        style.configure("Lamp.TButton", foreground="black", background="white", width=6, padding=6)
-
-        self.buttons = []
-        self.progbars = []
         self.leds = []
+        self.led_num = LAMP_NUM
+        self.col_num = 20
+        self.row_pixel = 30
+        self.row_offset = 30
+        self.col_offset = 100
 
-        for n in range(len(LAMP_NAME)):
-            self.buttons.append(ttk.Button(self, text=LAMP_NAME[n], style="Lamp.TButton",
-                             command=lambda: root.on_lamp_status_query_button_click(n)))
-            self.buttons[n].grid(row=n, column=0)
+        for n in range(self.led_num):
             self.leds.append(Led(self))
-            self.leds[n].grid(row=n, column=1)
-            self.progbars.append(ttk.Progressbar(self, orient="horizontal"))
-            self.progbars[n].grid(row=n, column=2)
+            self.leds[n].place(x=self.col_offset+n%self.col_num*self.row_pixel,
+                               y=self.row_offset+n//self.col_num*self.row_pixel)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
             .place(x=300, y=350)
