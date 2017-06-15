@@ -115,21 +115,22 @@ class Protocol(threading.Thread):
         else:
             tx_str_list = [tx_str_message]
 
-        for index in (0, 1):
+        for index in range(len(tx_str_list)):
+            tx_str =  tx_str_list[index]
             # for testing only, replace the last two bytes of message to self._count
             # self._count will increase for every frame for identification
             count_str = struct.pack('>H', self._count)
-            tx_str_list[index] = tx_str_list[index][0:len(tx_str_list[index])-2] + count_str
+            tx_str = tx_str[0:len(tx_str)-2] + count_str
             self._count += 1
 
-            crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str_list[index], 0xFFFF)).value) # MSB firstly
-            tx_str_list[index] = tx_str_list[index] + crc
-            logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str_list[index])))
+            crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
+            tx_str = tx_str + crc
+            logger.debug('TX: {0}'.format(binascii.b2a_hex(tx_str)))
             try:
-                self.ser.transmit(tx_str_list[index])
+                self.ser.transmit(tx_str)
             except:
                 logger.error('Tx error!')
-            if index == 0:
+            if index == 0 and tx_str_reset_sn:
                 logger.debug('broadcast sn=0 update frame')
                 sleep(self._timeout)  # need to consider network delay here given relay node number
         pass
