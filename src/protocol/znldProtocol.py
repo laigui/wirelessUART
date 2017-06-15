@@ -99,7 +99,7 @@ class Protocol(threading.Thread):
             assert len(message) == 4, 'RC message length is not 4'
             # have to increase it by 2 to avoid conflicting with STA's response when it isn't received by RC
             self._frame_no += 2
-        if self._role == 'STA':
+        if self._role == 'STA' or self._role == 'RELAY':
             assert len(message) == 4, 'STA message length is not 4'
             self._frame_no += 1
 
