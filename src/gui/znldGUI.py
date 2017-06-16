@@ -15,6 +15,7 @@ except:
 
 
 LARGE_FONT = ("Verdana", 16)
+MIDDLE_FONT = ("Verdana", 12)
 LAMP_NAME = ['灯具1', '灯具2', '灯具3']
 LAMP_NUM = 200
 
@@ -23,8 +24,7 @@ class Led(tk.Canvas):
     " (indicator) a LED "
     " color is on_color when status is 1, off_color when status is 0 "
 
-    def __init__(self, master,
-                 halpin="led", off_color="red", on_color="green", size=20, **kw):
+    def __init__(self, master, off_color="red", on_color="green", size=20, **kw):
         tk.Canvas.__init__(self, master, width=size, height=size, bd=0)
         self.off_color = off_color
         self.on_color = on_color
@@ -36,6 +36,30 @@ class Led(tk.Canvas):
             self.itemconfig(self.oh, fill=self.on_color)
         else:
             self.itemconfig(self.oh, fill=self.off_color)
+
+
+class SimpleTable(tk.Frame):
+    def __init__(self, parent, rows=4, columns=4):
+        # use black background so it "peeks through" to
+        # form grid lines
+        tk.Frame.__init__(self, parent, background="black")
+        self._widgets = []
+        for row in range(rows):
+            current_row = []
+            for column in range(columns):
+                label = tk.Label(self, text="%s/%s" % (row, column), font=MIDDLE_FONT,
+                                 borderwidth=0, width=16, height=2)
+                label.grid(row=row, column=column, sticky="nsew", padx=1, pady=1)
+                current_row.append(label)
+            self._widgets.append(current_row)
+
+        for column in range(columns):
+            self.grid_columnconfigure(column, weight=1)
+
+
+    def set(self, row, column, value):
+        widget = self._widgets[row][column]
+        widget.configure(text=value)
 
 
 class Application(tk.Tk):
@@ -120,6 +144,11 @@ class Application(tk.Tk):
     def on_lamp_indicator_update(self, lamp_num, status):
         '''状态查询更新灯具状态'''
         self.frames[PageOne].leds[lamp_num-1].update(status)
+
+    def on_lamp_confirm_button_click(self):
+        '''维修模式灯具确认'''
+        print(str(self.frames[PageThree].var2.get()) + " slider set on-going")
+        pass
 
 
 class StartPage(tk.Frame):
@@ -222,32 +251,70 @@ class PageThree(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        self.labels = []
-        self.checks = []
-        self.progbars = []
-        v0 = tk.IntVar()
-        v1 = tk.IntVar()
-        v2 = tk.IntVar()
-
         s = ttk.Style()
-        s.configure("CB.Toolbutton", foreground="black", background="white", width=6, padding=6)
+        s.configure("MID.TButton", foreground="black", background="white", font=MIDDLE_FONT, width=10, padding=12)
+        s.map("MID.TButton",
+                  foreground=[('disabled', 'grey'),
+                              ('pressed', 'red'),
+                              ('active', 'blue')],
+                  background=[('disabled', 'magenta'),
+                              ('pressed', '!focus', 'cyan'),
+                              ('active', 'green')],
+                  highlightcolor=[('focus', 'green'),
+                                  ('!focus', 'red')],
+                  relief=[('pressed', 'groove'),
+                          ('!pressed', 'ridge')])
 
-        for n in range(len(LAMP_NAME)):
-            # create label, checkbotton & progressbar widgets for each lamps
-            self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
-            self.labels[n].grid(row=n, column=0, padx=10, pady=10)
-            self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='CB.Toolbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
-            self.checks[n].grid(row=n, column=1, padx=10, pady=10)
-            self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
-                             command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
-            self.progbars[n].grid(row=n, column=2)
-
-        self.checks[0].configure(variable=v0, command=lambda: root.on_lamp_status_set_checkbutton_click(0, v0.get()))
-        self.checks[1].configure(variable=v1, command=lambda: root.on_lamp_status_set_checkbutton_click(1, v1.get()))
-        self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
+        self.label1 = ttk.Label(self, text="该组节点数为:", font=LARGE_FONT)
+        self.label1.place(x=10, y=10)
+        self.label2 = ttk.Label(self, text="节点号", font=LARGE_FONT)
+        self.label2.place(x=10, y=70)
+        self.spinboxes = []
+        for n in range(3):
+            self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
+            self.spinboxes[n].place(x=100+n*120, y=60)
+        self.label3 = ttk.Label(self, text="调光", font=LARGE_FONT)
+        self.label3.place(x=500, y=70)
+        self.var2 = tk.IntVar()
+        self.progbar = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, font=LARGE_FONT, width=30,
+                                 length=200, variable=self.var2)
+        self.progbar.place(x=560, y=40)
+        button1 = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)\
+            .place(x=400, y=150, anchor=tk.CENTER)
+        t = SimpleTable(self, 3, 4)
+        t.place(x=70, y=200)
+        t.set(0, 0, '工作状态')
+        t.set(0, 2, '工作电流')
+        t.set(1, 0, '工作电压')
+        t.set(1, 2, '电网频率')
+        t.set(2, 0, '有效功率')
+        t.set(2, 2, 'CO2排放量')
+        # self.labels = []
+        # self.checks = []
+        # self.progbars = []
+        # v0 = tk.IntVar()
+        # v1 = tk.IntVar()
+        # v2 = tk.IntVar()
+        #
+        # s = ttk.Style()
+        # s.configure("CB.Toolbutton", foreground="black", background="white", width=6, padding=6)
+        #
+        # for n in range(len(LAMP_NAME)):
+        #     # create label, checkbotton & progressbar widgets for each lamps
+        #     self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
+        #     self.labels[n].grid(row=n, column=0, padx=10, pady=10)
+        #     self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='CB.Toolbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
+        #     self.checks[n].grid(row=n, column=1, padx=10, pady=10)
+        #     self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
+        #                      command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
+        #     self.progbars[n].grid(row=n, column=2)
+        #
+        # self.checks[0].configure(variable=v0, command=lambda: root.on_lamp_status_set_checkbutton_click(0, v0.get()))
+        # self.checks[1].configure(variable=v1, command=lambda: root.on_lamp_status_set_checkbutton_click(1, v1.get()))
+        # self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=350)
+            .place(x=300, y=380)
 
 
 class PageFour(tk.Frame):
