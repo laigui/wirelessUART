@@ -13,6 +13,7 @@ except:
     import ttk
     import tkFileDialog as filedialog
 import json
+import shutil
 
 
 LARGE_FONT = ("Verdana", 16)
@@ -333,7 +334,7 @@ class PageFour(tk.Frame):
 
         self.v = tk.StringVar()
         entry = ttk.Entry(self, width=80, textvariable=self.v)
-        entry.pack(side="top", anchor="center")
+        entry.pack(side="top", anchor="center", pady=10)
 
         def callback():
             entry.delete(0, "end")  # 清空entry里面的内容
@@ -343,11 +344,15 @@ class PageFour(tk.Frame):
                 entry.insert(0, filename)  # 将选择好的文件加入到entry里面
 
         button1 = ttk.Button(self, text="打开配置文件", style="MID.TButton", command=callback)
-        button1.pack(side="top", anchor="center")
+        button1.pack(side="top", anchor="center", pady=10)
 
         button2 = ttk.Button(self, text="加载配置", style="MID.TButton",
                              command=lambda: self.load_user_config_file(parent, root))
         button2.pack(side="top", anchor="center")
+
+        button3 = ttk.Button(self, text="导出日志", style="MID.TButton",
+                             command=self.save_log_file)
+        button3.pack(side="top", anchor="center", pady=50)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton",
                              command=lambda: root.show_frame(StartPage))
@@ -362,6 +367,32 @@ class PageFour(tk.Frame):
             root.frames[PageThree].lamp_num.set(data['lamp_num'])
         except IOError:
             print("Config file " + self.v.get() + " cannot find!")
+
+    def get_latest_log_file(self):
+        base_dir = '.'
+        #列出目录下文件
+        list = os.listdir(base_dir)
+        #排序
+        try:
+            file=sorted(
+                [
+                    (x, os.path.getctime(os.path.join(base_dir, x)))  # 生成一个列表，列表的每个元素是一个元组（文件，文件创建时间）
+                    for x in list if os.path.isfile(os.path.join(base_dir, x)) and os.path.splitext(x)[1] == '.log'  # p是文件夹路径，对p下的所有内容，只将文件的信息加入列表
+                ],
+                key=lambda i: i[1])[-1]  # 对列表进行排序，排序的依据是每一个元组元素的第二个元素，排序后取最后一个元素
+            return file[0]
+        except IndexError:
+            print("no such file in base folder!")
+            return 'null'
+
+    def save_log_file(self):
+        src = self.get_latest_log_file()
+        dest = '/media/mikeqin/265B-0F19/znlg_log.txt'
+        try:
+            shutil.copy(src, dest)
+            print("Copied from " + src + " to " + dest)
+        except:
+            print("Destination " + dest + " open failed!")
 
 
 if __name__ == '__main__':
