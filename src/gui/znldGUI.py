@@ -74,7 +74,7 @@ class Application(tk.Tk):
         except TypeError:
             tk.Tk.__init__(self)
 
-        self.wm_title("智能路灯集控 V1.1       江苏天恒智能科技出品")
+        self.wm_title("智能路灯集控 V1.1")
         self.geometry('800x480')
 
         try:
@@ -99,9 +99,9 @@ class Application(tk.Tk):
         self.frames[StartPage].grid_columnconfigure(0, weight=1, minsize=266)
         self.frames[StartPage].grid_columnconfigure(1, weight=1, minsize=266)
         self.frames[StartPage].grid_columnconfigure(2, weight=1, minsize=266)
-        self.frames[StartPage].grid_rowconfigure(0, weight=1, minsize=150)
-        self.frames[StartPage].grid_rowconfigure(1, weight=1, minsize=150)
-        self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=150)
+        self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=120)
+        self.frames[StartPage].grid_rowconfigure(3, weight=1, minsize=120)
+        self.frames[StartPage].grid_rowconfigure(4, weight=1, minsize=120)
 
         self.frames[PageOne].grid_columnconfigure(0, weight=1)
         self.frames[PageOne].grid_columnconfigure(1, weight=1)
@@ -163,19 +163,29 @@ class StartPage(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        style = ttk.Style()
-        style.configure("BIG.TButton", foreground="black", background="white", font=LARGE_FONT, width=12, padding=18)
-        style.map("BIG.TButton",
-                  foreground=[('disabled', 'grey'),
-                              ('pressed', 'red'),
-                              ('active', 'blue')],
-                  background=[('disabled', 'magenta'),
-                              ('pressed', '!focus', 'cyan'),
-                              ('active', 'green')],
-                  highlightcolor=[('focus', 'green'),
-                                  ('!focus', 'red')],
-                  relief=[('pressed', 'groove'),
-                          ('!pressed', 'ridge')])
+        s = ttk.Style()
+        s.configure("BIG.TButton", foreground="black", background="white", font=LARGE_FONT, width=12, padding=18)
+        s.map("BIG.TButton",
+            foreground=[('disabled', 'grey'),
+                      ('pressed', 'red'),
+                      ('active', 'blue')],
+            background=[('disabled', 'magenta'),
+                      ('pressed', '!focus', 'cyan'),
+                      ('active', 'green')],
+            highlightcolor=[('focus', 'green'),
+                          ('!focus', 'red')],
+            relief=[('pressed', 'groove'),
+                  ('!pressed', 'ridge')])
+
+        filename = 'gui/logo.gif'
+        try:
+            img = tk.PhotoImage(file=filename)
+        except:
+            print('no gif logo file found')
+        img = img.subsample(3)
+        label1 = ttk.Label(self, image=img)
+        label1.image = img
+        label2 = ttk.Label(self, text='江苏天恒智能科技出品', font=MIDDLE_FONT, padding=10)
 
         button1 = ttk.Button(self, text="灯具全部开", style="BIG.TButton", command=root.on_all_lamps_on_button_click)
         button2 = ttk.Button(self, text="灯具全部关", style="BIG.TButton", command=root.on_all_lamps_off_button_click)
@@ -184,20 +194,22 @@ class StartPage(tk.Frame):
         button4 = ttk.Button(self, text="节能模式一", style="BIG.TButton", state="disabled")
         button5 = ttk.Button(self, text="节能模式二", style="BIG.TButton", state="disabled")
         button6 = ttk.Button(self, text="节能模式三", style="BIG.TButton", state="disabled")
-        button7 = ttk.Button(self, text="环境数据检测", style="BIG.TButton", state="enabled",
+        button7 = ttk.Button(self, text="环境数据检测", style="BIG.TButton", state="disabled",
                              command=lambda: root.show_frame(PageTwo))
         button8 = ttk.Button(self, text="系统网络设定", style="BIG.TButton", command=lambda: root.show_frame(PageFour))
         button9 = ttk.Button(self, text="维修模式", style="BIG.TButton", command=lambda: root.show_frame(PageThree))
 
-        button1.grid(column=0, row=0)
-        button2.grid(column=1, row=0)
-        button3.grid(column=2, row=0)
-        button4.grid(column=0, row=1)
-        button5.grid(column=1, row=1)
-        button6.grid(column=2, row=1)
-        button7.grid(column=0, row=2)
-        button8.grid(column=1, row=2)
-        button9.grid(column=2, row=2)
+        label1.grid(column=1, row=1)
+        label2.grid(column=1, row=0)
+        button1.grid(column=0, row=2)
+        button2.grid(column=1, row=2)
+        button3.grid(column=2, row=2)
+        button4.grid(column=0, row=3)
+        button5.grid(column=1, row=3)
+        button6.grid(column=2, row=3)
+        button7.grid(column=0, row=4)
+        button8.grid(column=1, row=4)
+        button9.grid(column=2, row=4)
 
 
 class PageOne(tk.Frame):
@@ -241,7 +253,7 @@ class PageTwo(tk.Frame):
             self.buttons[n].grid(row=n, column=0, padx=10, pady=10)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))\
-            .place(x=300, y=380)
+            .place(x=300, y=350)
 
 
 class PageThree(tk.Frame):
@@ -319,7 +331,7 @@ class PageThree(tk.Frame):
         # self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=380)
+            .place(x=300, y=350)
 
 
 class PageFour(tk.Frame):
@@ -386,7 +398,7 @@ class PageFour(tk.Frame):
 
     def save_log_file(self):
         src = self.get_latest_log_file()
-        dest = '/media/mikeqin/265B-0F19/znlg_log.txt'
+        dest = '/media/pi/265B-0F19/znlg_log.txt'
         try:
             shutil.copy(src, dest)
             print("Copied from " + src + " to " + dest)
