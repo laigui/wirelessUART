@@ -22,8 +22,8 @@ LAMP_NUM = 200
 
 
 class Led(tk.Canvas):
-    " (indicator) a LED "
-    " color is on_color when status is 1, off_color when status is 0 "
+    """ (indicator) a LED """
+    # color is on_color when status is 1, off_color when status is 0 "
 
     def __init__(self, master, off_color="red", on_color="green", size=20, **kw):
         tk.Canvas.__init__(self, master, width=size, height=size, bd=0)
@@ -40,6 +40,7 @@ class Led(tk.Canvas):
 
 
 class SimpleTable(tk.Frame):
+    """ Simple Table """
     def __init__(self, parent, rows=4, columns=4):
         # use black background so it "peeks through" to
         # form grid lines
@@ -64,7 +65,7 @@ class SimpleTable(tk.Frame):
 
 
 class Application(tk.Tk):
-    '''多页面演示程序'''
+    """多页面演示程序"""
 
     def __init__(self):
         try:
@@ -115,7 +116,7 @@ class Application(tk.Tk):
         frame.tkraise()  # 切换，提升当前 tk.Frame z轴顺序（使可见）！！此语句是本程序的点睛之处
 
     def on_all_lamps_on_button_click(self):
-        '''灯具全部开'''
+        """灯具全部开"""
         pass
 
     def on_all_lamps_off_button_click(self):
@@ -123,37 +124,37 @@ class Application(tk.Tk):
         pass
 
     def on_lamp_status_query_button_click(self, lamp_num):
-        '''灯具状态查询'''
+        """灯具状态查询"""
         print("Lamp #" + str(lamp_num) + " status query on-going")
         pass
 
     def on_lamp_status_set_button_click(self, lamp_num):
-        '''灯具状态设置'''
+        """灯具状态设置"""
         print("Lamp #" + str(lamp_num) + " status set on-going")
         pass
 
     def on_lamp_set_slider_move(self, value, lamp_num):
-        '''灯具状态设置'''
+        """灯具状态设置"""
         print("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
         pass
 
     def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
-        '''维修模式灯具状态设计'''
+        """维修模式灯具状态设计"""
         print("Lamp #" + str(lamp_num) + " checkbotton status = " + str(status))
         pass
 
     def on_lamp_indicator_update(self, lamp_num, status):
-        '''状态查询更新灯具状态'''
+        """状态查询更新灯具状态"""
         self.frames[PageOne].leds[lamp_num-1].update(status)
 
     def on_lamp_confirm_button_click(self):
-        '''维修模式灯具确认'''
+        """维修模式灯具确认"""
         print(str(self.frames[PageThree].var2.get()) + " slider set on-going")
         pass
 
 
 class StartPage(tk.Frame):
-    '''主页'''
+    """主页"""
 
     def __init__(self, parent, root):
         try:
@@ -199,7 +200,7 @@ class StartPage(tk.Frame):
 
 
 class PageOne(tk.Frame):
-    '''灯具状态查询页面'''
+    """灯具状态查询页面"""
 
     def __init__(self, parent, root):
         try:
@@ -224,7 +225,7 @@ class PageOne(tk.Frame):
 
 
 class PageTwo(tk.Frame):
-    '''环境数据检测页面'''
+    """环境数据检测页面"""
 
     def __init__(self, parent, root):
         try:
@@ -244,7 +245,7 @@ class PageTwo(tk.Frame):
 
 
 class PageThree(tk.Frame):
-    '''维修模式'''
+    """维修模式"""
 
     def __init__(self, parent, root):
         try:
@@ -268,14 +269,17 @@ class PageThree(tk.Frame):
 
         self.label1 = ttk.Label(self, text="该组节点数为:", font=LARGE_FONT)
         self.label1.place(x=10, y=10)
-        self.label2 = ttk.Label(self, text="节点号", font=LARGE_FONT)
-        self.label2.place(x=10, y=70)
+        self.lamp_num = tk.StringVar()
+        self.label2 = ttk.Label(self, textvariable=self.lamp_num, font=LARGE_FONT)
+        self.label2.place(x=150, y=10)
+        self.label3 = ttk.Label(self, text="节点号", font=LARGE_FONT)
+        self.label3.place(x=10, y=70)
         self.spinboxes = []
         for n in range(3):
             self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
             self.spinboxes[n].place(x=100+n*120, y=60)
-        self.label3 = ttk.Label(self, text="调光", font=LARGE_FONT)
-        self.label3.place(x=500, y=70)
+        self.label4 = ttk.Label(self, text="调光", font=LARGE_FONT)
+        self.label4.place(x=500, y=70)
         self.var2 = tk.IntVar()
         self.progbar = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, font=LARGE_FONT, width=30,
                                  length=200, variable=self.var2)
@@ -319,7 +323,7 @@ class PageThree(tk.Frame):
 
 
 class PageFour(tk.Frame):
-    '''系统网络设定'''
+    """系统网络设定"""
 
     def __init__(self, parent, root):
         try:
@@ -338,20 +342,24 @@ class PageFour(tk.Frame):
             if filename:
                 entry.insert(0, filename)  # 将选择好的文件加入到entry里面
 
-        button1 = ttk.Button(self, text="Open", style="MID.TButton", command=callback)
+        button1 = ttk.Button(self, text="打开配置文件", style="MID.TButton", command=callback)
         button1.pack(side="top", anchor="center")
 
-        button2 = ttk.Button(self, text="Load", style="MID.TButton", command=self.load_config_file)
+        button2 = ttk.Button(self, text="加载配置", style="MID.TButton",
+                             command=lambda: self.load_user_config_file(parent, root))
         button2.pack(side="top", anchor="center")
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton",
-                             command=lambda: root.show_frame(StartPage)).place(x=300, y=350)
+                             command=lambda: root.show_frame(StartPage))
+        button0.place(x=300, y=350)
 
-    def load_config_file(self):
+    def load_user_config_file(self, parent, root):
+        """加载用户配置文件"""
         try:
             with open(self.v.get()) as f_obj:
                 data = json.load(f_obj)
             print("Config file " + self.v.get() + " is loaded!")
+            root.frames[PageThree].lamp_num.set(data['lamp_num'])
         except IOError:
             print("Config file " + self.v.get() + " cannot find!")
 
