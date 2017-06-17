@@ -19,7 +19,7 @@ import shutil
 LARGE_FONT = ("Verdana", 16)
 MIDDLE_FONT = ("Verdana", 12)
 LAMP_NAME = ['灯具1', '灯具2', '灯具3']
-LAMP_NUM = 200
+LAMP_MAX_NUM = 512
 
 
 class Led(tk.Canvas):
@@ -210,19 +210,18 @@ class PageOne(tk.Frame):
             tk.Frame.__init__(self)
 
         self.leds = []
-        self.led_num = LAMP_NUM
-        self.col_num = 20
-        self.row_pixel = 30
+        self.col_num = 30
+        self.row_pixel = 20
         self.row_offset = 30
         self.col_offset = 100
 
-        for n in range(self.led_num):
+        for n in range(LAMP_MAX_NUM):
             self.leds.append(Led(self))
             self.leds[n].place(x=self.col_offset+n%self.col_num*self.row_pixel,
                                y=self.row_offset+n//self.col_num*self.row_pixel)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=350)
+            .place(x=300, y=380)
 
 
 class PageTwo(tk.Frame):
@@ -242,7 +241,7 @@ class PageTwo(tk.Frame):
             self.buttons[n].grid(row=n, column=0, padx=10, pady=10)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))\
-            .place(x=300, y=350)
+            .place(x=300, y=380)
 
 
 class PageThree(tk.Frame):
