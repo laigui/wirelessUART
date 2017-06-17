@@ -88,8 +88,10 @@ class Protocol(threading.Thread):
             #self.ser.set_E32_mode(0)
 
         self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
+        self.e32_delay = 5 # E32 initial communication delay, unknown to us so far. let it be 5 so far
         self.relay_delay = 1 # delay x seconds to avoid conflicting with STA response
         self.relay_random_backoff = 3 # max. random backoff delay to avoid conflicting between RELAYs
+        self.hop = hop
         logger.info('%s (%s) initialization done with timeout = %s seconds'
                     % (self._role, binascii.b2a_hex(self._id), repr(self.timeout)))
 
@@ -135,7 +137,8 @@ class Protocol(threading.Thread):
                 logger.error('Tx error!')
             if index == 0 and tx_str_reset_sn:
                 logger.debug('broadcast sn=0 update frame')
-                sleep(self.timeout)  # need to consider network delay here given relay node number
+                # need to consider network delay here given relay hop number
+                sleep(self.hop * (self.relay_random_backoff + self.e32_delay))
         pass
 
     def _forward_frame(self, frame):
