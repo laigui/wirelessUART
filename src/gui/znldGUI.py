@@ -12,6 +12,7 @@ except:
     import Tkinter as tk
     import ttk
     import tkFileDialog as filedialog
+import json
 
 
 LARGE_FONT = ("Verdana", 16)
@@ -326,8 +327,9 @@ class PageFour(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        entry = ttk.Entry(self, width=40)
-        entry.pack(side="top", anchor="nw")
+        self.v = tk.StringVar()
+        entry = ttk.Entry(self, width=80, textvariable=self.v)
+        entry.pack(side="top", anchor="center")
 
         def callback():
             entry.delete(0, "end")  # 清空entry里面的内容
@@ -336,11 +338,22 @@ class PageFour(tk.Frame):
             if filename:
                 entry.insert(0, filename)  # 将选择好的文件加入到entry里面
 
-        button1 = ttk.Button(self, text="Open", command=callback)
-        button1.pack(side="top", anchor="nw")
+        button1 = ttk.Button(self, text="Open", style="MID.TButton", command=callback)
+        button1.pack(side="top", anchor="center")
 
-        button2 = ttk.Button(self, text="回到主页", style="BIG.TButton",
+        button2 = ttk.Button(self, text="Load", style="MID.TButton", command=self.load_config_file)
+        button2.pack(side="top", anchor="center")
+
+        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton",
                              command=lambda: root.show_frame(StartPage)).place(x=300, y=350)
+
+    def load_config_file(self):
+        try:
+            with open(self.v.get()) as f_obj:
+                data = json.load(f_obj)
+            print("Config file " + self.v.get() + " is loaded!")
+        except IOError:
+            print("Config file " + self.v.get() + " cannot find!")
 
 
 if __name__ == '__main__':
