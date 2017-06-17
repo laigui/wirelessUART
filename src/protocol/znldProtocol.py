@@ -41,12 +41,12 @@ class Protocol(threading.Thread):
                     TAG_POLL: 'Poll',
                     TAG_POLL_ACK: 'Poll ACK',}
 
-        MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + BYTE_ALL_ON + '\xFF' * 2
-        MESG_LAMP_ALL_OFF = TAG_LAMP_CTRL + BYTE_ALL_OFF + BYTE_RESERVED * 2
-        MESG_ACK = TAG_ACK + BYTE_RESERVED * 3
-        MESG_NACK = TAG_NACK + BYTE_RESERVED * 3
-        MESG_POLL = TAG_POLL + BYTE_RESERVED * 3
-        MESG_NULL = BYTE_RESERVED * 4
+        MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + BYTE_ALL_ON + '\xFF' * 2 + BYTE_RESERVED
+        MESG_LAMP_ALL_OFF = TAG_LAMP_CTRL + BYTE_ALL_OFF + BYTE_RESERVED * 3
+        MESG_ACK = TAG_ACK + BYTE_RESERVED * 4
+        MESG_NACK = TAG_NACK + BYTE_RESERVED * 4
+        MESG_POLL = TAG_POLL + BYTE_RESERVED * 4
+        MESG_NULL = BYTE_RESERVED * 5
         pass
 
     def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600):
@@ -57,14 +57,16 @@ class Protocol(threading.Thread):
         self._role = role # three roles: 'RC', 'STA', 'RELAY'
         assert role=='RC' or role=='STA' or role=='RELAY', 'Protocol role mistake!'
         self._id = id
-        self._tx_frame_len = 21
-        if self._role == 'RC':
-            self._rx_frame_len = 21
-        elif self._role == 'STA' or self._role == 'RELAY':
-            self._rx_frame_len = 21
+        # to simplify protocol, use the same length for TX & RX
+        self._tx_frame_len = 22
+        self._rx_frame_len = 22
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -1
-        self._led_status = '\x00'
+        self._STA_led_status = '\x00'
+        
+        # for testing identification, we will update the last 2 bytes of payload with sequential number
+        # _testing = True to enable this feature
+        self._testing = True
         self._count = 0
 
         self._GPIO_LED = 21
@@ -80,6 +82,7 @@ class Protocol(threading.Thread):
         self.ser = E32(port=port, inHex=False)
         if self.ser.open() == False:
             self.thread_stop = True
+        # TODO: NEED UPDATE LATER
         #else:
             #dump E32 version and configuration, disabled for 1st ver board now
             #self.ser.set_E32_mode(3)
@@ -100,12 +103,11 @@ class Protocol(threading.Thread):
             GPIO.cleanup()
 
     def _send_message(self, dest_id, message):
+        assert len(message) == 5, 'payload length is not 5'
         if self._role == 'RC':
-            assert len(message) == 4, 'RC message length is not 4'
             # have to increase it by 2 to avoid conflicting with STA's response when it isn't received by RC
             self._frame_no += 2
         if self._role == 'STA' or self._role == 'RELAY':
-            assert len(message) == 4, 'STA message length is not 4'
             self._frame_no += 1
 
         tx_str_reset_sn = None
@@ -122,11 +124,13 @@ class Protocol(threading.Thread):
 
         for index in range(len(tx_str_list)):
             tx_str =  tx_str_list[index]
-            # for testing only, replace the last two bytes of message to self._count
-            # self._count will increase for every frame for identification
-            count_str = struct.pack('>H', self._count)
-            tx_str = tx_str[0:len(tx_str)-2] + count_str
-            self._count += 1
+            
+            if self._testing:
+                # for testing only, replace the last two bytes of message to self._count
+                # self._count will increase for every frame for identification
+                count_str = struct.pack('>H', self._count)
+                tx_str = tx_str[0:len(tx_str)-2] + count_str
+                self._count += 1
 
             crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(tx_str, 0xFFFF)).value) # MSB firstly
             tx_str = tx_str + crc
@@ -195,7 +199,7 @@ class Protocol(threading.Thread):
         dest_id = rx_frame[8:14]
         sn = ord(rx_frame[14])
         tag = rx_frame[15]
-        value = rx_frame[16:19]
+        value = rx_frame[16:20]
         update_frame_no = False
 
         if dest_id == self._id or dest_id == self.LampControl.BROADCAST_ID:
@@ -215,8 +219,8 @@ class Protocol(threading.Thread):
                             logger.debug('no ACK to broadcast')
                     elif tag == self.LampControl.TAG_POLL:
                         logger.debug('got TAG_POLL')
-                        MESG_POLL_ACK = self.LampControl.TAG_POLL_ACK + self._led_status \
-                                        + self.LampControl.BYTE_RESERVED * 2
+                        MESG_POLL_ACK = self.LampControl.TAG_POLL_ACK + self._STA_led_status \
+                                        + self.LampControl.BYTE_RESERVED * 3
                         self._send_message(src_id, MESG_POLL_ACK)
                 else:
                     logger.debug('got unknown CMD TAG, sent NACK')
@@ -260,7 +264,7 @@ class Protocol(threading.Thread):
         self.thread_stop = True
 
     def _STA_do_lamp_ctrl(self, value):
-        if value[0] == '\x03':
+        if value[0] == self.LampControl.BYTE_ALL_ON:
             logger.info('LED ALL ON')
             if ISRPI:
                 GPIO.output(self._GPIO_LED, GPIO.LOW)
@@ -268,7 +272,7 @@ class Protocol(threading.Thread):
             logger.info('LED ALL OFF')
             if ISRPI:
                 GPIO.output(self._GPIO_LED, GPIO.HIGH)
-        self._led_status = value[0]
+        self._STA_led_status = value[0]
         pass
 
     def _RC_wait_for_resp(self, src_id, tag, timeout):
@@ -294,12 +298,12 @@ class Protocol(threading.Thread):
                         else:
                             logger.debug('unexpected frame received with TAG %s', binascii.b2a_hex(rx_tag))
                             break
-        return (result, rx_frame[15:18])
+        return (result, rx_frame[15:20])
 
     def RC_unicast_poll(self, dest_id, expected):
         '''
         unicast only, expect TAG_POLL_ACK
-        for test, 1st byte of POLL_ACK has self._led_status
+        for test, 1st byte of POLL_ACK has self._STA_led_status
         :param dest_id:
         :param expected: expected value in POLL_ACK
         :return: True on success, False on failure
@@ -394,7 +398,7 @@ if __name__ == "__main__":
         foo.start()
         sleep(1)
         if role == 'RC':
-            foo.RC_lamp_ctrl(STA1_ID, '\x03\xFF\xFF')
+            foo.RC_lamp_ctrl(STA1_ID, '\x03\xFF\xFF\x00')
     except KeyboardInterrupt:
         logger.debug('Stopping Thread by Ctrl-C')
         foo.stop()

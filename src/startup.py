@@ -121,7 +121,7 @@ if __name__ == "__main__":
                 loop = 0
                 led_ctrl = 0x3
                 while loop < 10000:
-                    mesg = chr(led_ctrl) + '\xFF\xFF'
+                    mesg = chr(led_ctrl) + '\xFF\xFF\x00'
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
                     rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
