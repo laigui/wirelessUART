@@ -131,16 +131,16 @@ if __name__ == "__main__":
                         try:
                             rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl))
                         except RxUnexpectedTag:
-                            logger.error('RC got unexpected TAG_POLL_ACK from STA')
+                            logger.error('RC got unexpected TAG_POLL_ACK from STA (%s)' % id)
                             results[name]['ERR_TAG'] += 1
                         except RxTimeOut:
-                            logger.debug('RC didn\'t get expected response from STA')
+                            logger.debug('RC didn\'t get expected response from STA (%s)' % id)
                             results[name]['ERR_TO'] += 1
                         except RxNack:
-                            logger.error('NACK is received')
+                            logger.error('NACK is received from STA (%s)' % id)
                             results[name]['ERR_NACK'] += 1
                         else:
-                            logger.info('RC got expected TAG_POLL_ACK from STA')
+                            logger.info('RC got expected TAG_POLL_ACK from STA (%s)' % id)
                             logger.info('%s (%s) response successfully' % (name, id))
                             results[name]['OK'] += 1
                         sleep(5 + rc.relay_delay + rc.relay_random_backoff) # need to consider network delay here given relay node number

@@ -345,17 +345,17 @@ class Protocol(threading.Thread):
             try:
                 (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_ACK, timeout=self.timeout)
                 if result:
-                    logger.info('RC got TAG_ACK from STA')
+                    logger.info('RC got TAG_ACK from STA (%s)' % binascii.b2a_hex(dest_id))
                     return True
                 else:
                     count += 1
             except RxTimeOut:
                 count += 1
             except RxNack:
-                logger.error('NACK is received')
+                logger.error('NACK is received from STA (%s)' % binascii.b2a_hex(dest_id))
                 return False
         else:
-            logger.debug('RC didn\'t get expected response from STA')
+            logger.debug('RC didn\'t get expected response from STA (%s)' % binascii.b2a_hex(dest_id))
             return False
         pass
 
