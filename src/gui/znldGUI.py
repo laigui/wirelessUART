@@ -289,7 +289,10 @@ class PageThree(tk.Frame):
         self.label3.place(x=10, y=70)
         self.spinboxes = []
         for n in range(3):
-            self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
+            if n == 0:
+                self.spinboxes.append(tk.Spinbox(self, from_=0, to=5, font=("Verdana", 30), width=3))
+            else:
+                self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
             self.spinboxes[n].place(x=100+n*120, y=60)
         self.label4 = ttk.Label(self, text="调光1", font=LARGE_FONT)
         self.label4.place(x=500, y=50)
