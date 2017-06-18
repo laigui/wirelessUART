@@ -49,7 +49,8 @@ class Protocol(threading.Thread):
         MESG_NULL = BYTE_RESERVED * 5
         pass
 
-    def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600):
+    def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
+                 e32_delay=5, relay_delay=1, relay_random_backoff=3):
         threading.Thread.__init__(self)
         self.thread_stop = False
         self._retry = retry
@@ -66,7 +67,10 @@ class Protocol(threading.Thread):
         
         # for testing identification, we will update the last 2 bytes of payload with sequential number
         # _testing = True to enable this feature
-        self._testing = True
+        if testing == 'TRUE':
+            self._testing = True
+        else:
+            self._testing = False
         self._count = 0
 
         self._GPIO_LED = 21
@@ -90,13 +94,14 @@ class Protocol(threading.Thread):
             #logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
             #self.ser.set_E32_mode(0)
 
-        self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + 5
-        self.e32_delay = 5 # E32 initial communication delay, unknown to us so far. let it be 5 so far
-        self.relay_delay = 1 # delay x seconds to avoid conflicting with STA response
-        self.relay_random_backoff = 3 # max. random backoff delay to avoid conflicting between RELAYs
+        self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + timeout
+        self.e32_delay = e32_delay # E32 initial communication delay, unknown to us so far. let it be 5 so far
+        self.relay_delay = relay_delay # delay x seconds to avoid conflicting with STA response
+        self.relay_random_backoff = relay_random_backoff # max. random backoff delay to avoid conflicting between RELAYs
         self.hop = hop
-        logger.info('%s (%s) initialization done with timeout = %s seconds'
-                    % (self._role, binascii.b2a_hex(self._id), repr(self.timeout)))
+        logger.info('%s (%s) initialization done with timeout=%s, e32_delay=%s, relay_delay=%s, relay_random_backoff=%s, hop=%s'
+                    % (self._role, binascii.b2a_hex(self._id), repr(self.timeout), repr(self.e32_delay),
+                       repr(self.relay_delay), repr(self.relay_random_backoff), repr(self.hop)))
 
     def __del__(self):
         if ISRPI:

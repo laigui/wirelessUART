@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 class ZNLDApp(Application):
     def __init__(self):
-        self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
+        self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
+                           testing = testing, timeout = timeout, e32_delay = e32_delay, relay_delay = relay_delay,
+                           relay_random_backoff = relay_random_backoff)
         self.rc.setName('Thread RC receiving')
         self.rc.setDaemon(True)
         self.rc.start()
@@ -102,6 +104,11 @@ if __name__ == "__main__":
         hop = node_config['hop']
         e32_baudrate = node_config['e32']['baudrate']
         stations = node_config['stations']
+        testing = node_config['testing'].strip().upper()
+        timeout = node_config['timeout']
+        e32_delay = node_config['e32_delay']
+        relay_delay = node_config['relay_delay']
+        relay_random_backoff = node_config['relay_random_backoff']
         try:
             gui = node_config['gui'].strip().upper()
         except KeyError:
@@ -109,7 +116,9 @@ if __name__ == "__main__":
 
         if gui == 'NO':
             logger.debug('running in non-GUI mode')
-            rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate)
+            rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
+                          testing=testing, timeout=timeout, e32_delay=e32_delay, relay_delay=relay_delay,
+                          relay_random_backoff=relay_random_backoff)
             rc.setName('Thread RC receiving')
             rc.setDaemon(True)
             results = {}
