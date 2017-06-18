@@ -88,13 +88,12 @@ class Protocol(threading.Thread):
         self.ser = E32(port=port, inHex=False)
         if self.ser.open() == False:
             self.thread_stop = True
-        # TODO: NEED UPDATE LATER
-        #else:
+        else:
             #dump E32 version and configuration, disabled for 1st ver board now
-            #self.ser.set_E32_mode(3)
-            #logger.info('E32 Version: %s', self.ser.get_version(inHex=False))
-            #logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
-            #self.ser.set_E32_mode(0)
+            self.ser.set_E32_mode(3)
+            logger.info('E32 Version: %s', self.ser.get_version(inHex=False))
+            logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
+            self.ser.set_E32_mode(0)
 
         self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + timeout
         self.e32_delay = e32_delay # E32 initial communication delay, unknown to us so far. let it be 5 so far
