@@ -4,7 +4,7 @@
 __author__ = 'Wei; Mike'
 
 from protocol.znldProtocol import Protocol
-from gui.znldGUI import Application
+from gui.znldGUI import *
 from libs.myException import *
 
 import binascii
@@ -15,13 +15,14 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 class ZNLDApp(Application):
-    def __init__(self):
+    def __init__(self, stations):
         self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                            testing = testing, timeout = timeout, e32_delay = e32_delay, relay_delay = relay_delay,
                            relay_random_backoff = relay_random_backoff)
         self.rc.setName('Thread RC receiving')
         self.rc.setDaemon(True)
         self.rc.start()
+        self.stations = stations
         Application.__init__(self)
 
     def __del__(self):
@@ -71,6 +72,31 @@ class ZNLDApp(Application):
         station_id = '\x00' * 5 + chr(lamp_num + 2)
         logger.info('unicast to STA (%s) mesg = %s' % (binascii.b2a_hex(station_id), binascii.b2a_hex(mesg)))
         self.rc.RC_lamp_ctrl(station_id, mesg)
+        pass
+
+    def on_lamp_confirm_button_click(self):
+        """维修模式灯具确认"""
+        node_addr = int(self.frames[PageThree].spinboxes[2].get()) + \
+                    int(self.frames[PageThree].spinboxes[1].get()) * 10 + \
+                    int(self.frames[PageThree].spinboxes[0].get()) * 100
+
+        lamp1_val = self.frames[PageThree].var1.get()
+        lamp2_val = self.frames[PageThree].var2.get()
+        if lamp1_val > 0 and lamp2_val > 0:
+            lamp_on = Protocol.LampControl.BYTE_ALL_ON
+        elif lamp1_val > 0 and lamp2_val == 0:
+            lamp_on = Protocol.LampControl.BYTE_LEFT_ON
+        elif lamp1_val == 0 and lamp2_val > 0:
+            lamp_on = Protocol.LampControl.BYTE_RIGHT_ON
+        else:
+            lamp_on = Protocol.LampControl.BYTE_ALL_OFF
+        mesg = lamp_on + chr(lamp1_val) + chr(lamp2_val) + Protocol.LampControl.BYTE_RESERVED
+
+        for id in stations.keys():
+            if stations[id]['addr'] == node_addr:
+                logger.info('unicast to STA (%s) mesg = %s' % (id, binascii.b2a_hex(mesg)))
+                self.rc.RC_lamp_ctrl(station_id, mesg)
+                break
         pass
 
 
@@ -123,7 +149,7 @@ if __name__ == "__main__":
             rc.setDaemon(True)
             results = {}
             for id in stations.keys():
-                name = stations[id].name
+                name = stations[id]['name']
                 results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
             try:
                 rc.start()
@@ -139,7 +165,7 @@ if __name__ == "__main__":
                     sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
                     logger.info('poll led status from each STA:')
                     for id in stations.keys():
-                        name = stations[id].name
+                        name = stations[id]['name']
                         try:
                             rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl))
                         except RxUnexpectedTag:
@@ -176,7 +202,7 @@ if __name__ == "__main__":
         else:
             logger.debug('running in GUI mode')
             # 实例化Application
-            app = ZNLDApp()
+            app = ZNLDApp(stations)
             # 主消息循环:
             app.mainloop()
 

@@ -150,6 +150,7 @@ class Application(tk.Tk):
 
     def on_lamp_confirm_button_click(self):
         """维修模式灯具确认"""
+        print(str(self.frames[PageThree].var1.get()) + " slider set on-going")
         print(str(self.frames[PageThree].var2.get()) + " slider set on-going")
         pass
 
@@ -290,12 +291,20 @@ class PageThree(tk.Frame):
         for n in range(3):
             self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
             self.spinboxes[n].place(x=100+n*120, y=60)
-        self.label4 = ttk.Label(self, text="调光", font=LARGE_FONT)
-        self.label4.place(x=500, y=70)
+        self.label4 = ttk.Label(self, text="调光1", font=LARGE_FONT)
+        self.label4.place(x=500, y=50)
+        self.label5 = ttk.Label(self, text="调光2", font=LARGE_FONT)
+        self.label5.place(x=500, y=100)
+
+        self.var1 = tk.IntVar()
+        self.progbar1 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
+                                 length=200, variable=self.var1)
+        self.progbar1.place(x=560, y=30)
         self.var2 = tk.IntVar()
-        self.progbar = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, font=LARGE_FONT, width=30,
+        self.progbar2 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
                                  length=200, variable=self.var2)
-        self.progbar.place(x=560, y=40)
+        self.progbar2.place(x=560, y=80)
+
         button1 = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)\
             .place(x=400, y=150, anchor=tk.CENTER)
         t = SimpleTable(self, 3, 4)
