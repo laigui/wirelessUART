@@ -33,7 +33,7 @@ class ZNLDApp(Application):
     def on_all_lamps_on_button_click(self):
         '''灯具全部开'''
         logger.info('on_all_lamps_on_button_click')
-        mesg = Protocol.LampControl.BYTE_ALL_ON + '\xFF\xFF'
+        mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_ON
         logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
         self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
         pass
@@ -41,7 +41,7 @@ class ZNLDApp(Application):
     def on_all_lamps_off_button_click(self):
         '''灯具全部关'''
         logger.info('on_all_lamps_off_button_click')
-        mesg = Protocol.LampControl.BYTE_ALL_OFF + '\xFF\xFF'
+        mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_OFF
         logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
         self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
         pass
@@ -65,9 +65,9 @@ class ZNLDApp(Application):
         '''维修模式灯具状态设计'''
         logger.debug("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
         if status == 1:
-            mesg = Protocol.LampControl.BYTE_ALL_ON + '\xFF\xFF'
+            mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_ON
         else:
-            mesg = Protocol.LampControl.BYTE_ALL_OFF + '\xFF\xFF'
+            mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_OFF
         station_id = '\x00' * 5 + chr(lamp_num + 2)
         logger.info('unicast to STA (%s) mesg = %s' % (binascii.b2a_hex(station_id), binascii.b2a_hex(mesg)))
         self.rc.RC_lamp_ctrl(station_id, mesg)
