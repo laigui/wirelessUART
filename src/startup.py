@@ -122,7 +122,8 @@ if __name__ == "__main__":
             rc.setName('Thread RC receiving')
             rc.setDaemon(True)
             results = {}
-            for (id, name) in stations.items():
+            for id in stations.keys():
+                name = stations[id].name
                 results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
             try:
                 rc.start()
@@ -137,7 +138,8 @@ if __name__ == "__main__":
                     # need to consider network delay here given relay node number
                     sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
                     logger.info('poll led status from each STA:')
-                    for (id, name) in stations.items():
+                    for id in stations.keys():
+                        name = stations[id].name
                         try:
                             rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl))
                         except RxUnexpectedTag:
