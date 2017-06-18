@@ -1,2 +1,2 @@
-cd src
+cd ~/works/wirelessUART/src
 python startup.py
