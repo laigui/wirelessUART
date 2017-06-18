@@ -95,7 +95,7 @@ class ZNLDApp(Application):
         for id in stations.keys():
             if stations[id]['addr'] == node_addr:
                 logger.info('unicast to STA (%s) mesg = %s' % (id, binascii.b2a_hex(mesg)))
-                self.rc.RC_lamp_ctrl(station_id, mesg)
+                self.rc.RC_lamp_ctrl(id, mesg)
                 break
         pass
 
