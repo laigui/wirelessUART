@@ -186,7 +186,7 @@ class StartPage(tk.Frame):
         img = img.subsample(3)
         label1 = ttk.Label(self, image=img)
         label1.image = img
-        label2 = ttk.Label(self, text='江苏天恒智能科技出品', font=MIDDLE_FONT, padding=10)
+        label2 = ttk.Label(self, text='江苏天恒智能科技出品', font=LARGE_FONT, padding=10)
 
         button1 = ttk.Button(self, text="灯具全部开", style="BIG.TButton", command=root.on_all_lamps_on_button_click)
         button2 = ttk.Button(self, text="灯具全部关", style="BIG.TButton", command=root.on_all_lamps_off_button_click)
@@ -200,8 +200,8 @@ class StartPage(tk.Frame):
         button8 = ttk.Button(self, text="系统网络设定", style="BIG.TButton", command=lambda: root.show_frame(PageFour))
         button9 = ttk.Button(self, text="维修模式", style="BIG.TButton", command=lambda: root.show_frame(PageThree))
 
-        label1.grid(column=1, row=1)
-        label2.grid(column=1, row=0)
+        label1.place(x=500, y=0)
+        label2.grid(column=1, row=0, sticky='sw')
         button1.grid(column=0, row=2)
         button2.grid(column=1, row=2)
         button3.grid(column=2, row=2)
