@@ -64,7 +64,7 @@ class Protocol(threading.Thread):
         self._tx_frame_len = 22
         self._rx_frame_len = 22
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
-        self._frame_no = -1
+        self._frame_no = -2
         self._STA_led_status = '\x00'
         
         # for testing identification, we will update the last 2 bytes of payload with sequential number
@@ -255,6 +255,10 @@ class Protocol(threading.Thread):
         pass
 
     def run(self):
+        if self._role == 'RC':
+            # broadcast frame number reset frame upon the startup to avoid STA confusing issue
+            self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
+            sleep(self.hop * (self.relay_random_backoff + self.e32_delay))
         logger.info('Thread receiving starts running until it is stop on purpose.')
         while not self.thread_stop:
             rx_frame = self._recv_frame()
