@@ -120,7 +120,7 @@ class Protocol(threading.Thread):
 
         tx_str_reset_sn = None
         if self._frame_no >= self._max_frame_no and self._role == 'RC':
-            if dest_id == self.LampControl.BROADCAST_ID:
+            if dest_id != self.LampControl.BROADCAST_ID:
                 self._frame_no = 0
                 tx_str_reset_sn = self.LampControl.FRAME_HEADER + self._id + self.LampControl.BROADCAST_ID\
                          + chr(self._frame_no) + self.LampControl.MESG_NULL
