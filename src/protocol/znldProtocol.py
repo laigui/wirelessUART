@@ -66,6 +66,7 @@ class Protocol(threading.Thread):
         self._rx_frame_len = 22
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -2
+        self._max_frame_no = 25
         self._STA_led_status = '\x00'
         
         # for testing identification, we will update the last 2 bytes of payload with sequential number
@@ -118,11 +119,15 @@ class Protocol(threading.Thread):
             self._frame_no += 1
 
         tx_str_reset_sn = None
-        if self._frame_no >= 25 and self._role == 'RC':
-            self._frame_no = 0
-            tx_str_reset_sn = self.LampControl.FRAME_HEADER + self._id + self.LampControl.BROADCAST_ID\
-                     + chr(self._frame_no) + self.LampControl.MESG_NULL
-            self._frame_no = 1
+        if self._frame_no >= self._max_frame_no and self._role == 'RC':
+            if dest_id == self.LampControl.BROADCAST_ID:
+                self._frame_no = 0
+                tx_str_reset_sn = self.LampControl.FRAME_HEADER + self._id + self.LampControl.BROADCAST_ID\
+                         + chr(self._frame_no) + self.LampControl.MESG_NULL
+                self._frame_no = 1
+            else:
+                # no need to send 2nd broadcast frame if it is already broadcast.
+                self._frame_no = 0
         tx_str_message = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
         if tx_str_reset_sn:
             tx_str_list = [tx_str_reset_sn, tx_str_message]
