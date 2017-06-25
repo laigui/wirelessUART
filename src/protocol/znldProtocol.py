@@ -20,6 +20,7 @@ from libs.myException import *
 
 class Protocol(threading.Thread):
     class LampControl:
+        MESG_LENGTH = 5
         BROADCAST_ID = '\x00\x00\x00\x00\x00\x00'
         FRAME_HEADER = '\x55\x55'
         BYTE_RESERVED = '\x00'
@@ -45,10 +46,10 @@ class Protocol(threading.Thread):
         MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_ON
         MESG_VALUE_LAMP_ALL_OFF = BYTE_ALL_OFF + BYTE_RESERVED * 3
         MESG_LAMP_ALL_OFF = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_OFF
-        MESG_ACK = TAG_ACK + BYTE_RESERVED * 4
-        MESG_NACK = TAG_NACK + BYTE_RESERVED * 4
-        MESG_POLL = TAG_POLL + BYTE_RESERVED * 4
-        MESG_NULL = BYTE_RESERVED * 5
+        MESG_ACK = TAG_ACK + BYTE_RESERVED * (MESG_LENGTH - 1)
+        MESG_NACK = TAG_NACK + BYTE_RESERVED * (MESG_LENGTH - 1)
+        MESG_POLL = TAG_POLL + BYTE_RESERVED * (MESG_LENGTH - 1)
+        MESG_NULL = BYTE_RESERVED * MESG_LENGTH
         pass
 
     def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
@@ -109,7 +110,7 @@ class Protocol(threading.Thread):
             GPIO.cleanup()
 
     def _send_message(self, dest_id, message):
-        assert len(message) == 5, 'payload length is not 5'
+        assert len(message) == self.LampControl.MESG_LENGTH, 'payload length is not 5'
         if self._role == 'RC':
             # have to increase it by 2 to avoid conflicting with STA's response when it isn't received by RC
             self._frame_no += 2
