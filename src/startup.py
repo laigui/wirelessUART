@@ -18,7 +18,7 @@ class ZNLDApp(Application):
     def __init__(self, stations):
         self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                            testing = testing, timeout = timeout, e32_delay = e32_delay, relay_delay = relay_delay,
-                           relay_random_backoff = relay_random_backoff)
+                           relay_random_backoff = relay_random_backoff, stations=stations)
         self.rc.setName('Thread RC receiving')
         self.rc.setDaemon(True)
         self.rc.start()
@@ -144,7 +144,7 @@ if __name__ == "__main__":
             logger.debug('running in non-GUI mode')
             rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                           testing=testing, timeout=timeout, e32_delay=e32_delay, relay_delay=relay_delay,
-                          relay_random_backoff=relay_random_backoff)
+                          relay_random_backoff=relay_random_backoff, stations=stations)
             rc.setName('Thread RC receiving')
             rc.setDaemon(True)
             results = {}
@@ -207,7 +207,7 @@ if __name__ == "__main__":
             app.mainloop()
 
     elif role == 'STA':
-        sta = Protocol(id=id, role=role)
+        sta = Protocol(id=id, role=role, stations=None)
         sta.setName('Thread STA receiving')
         sta.setDaemon(True)
         try:
@@ -226,7 +226,7 @@ if __name__ == "__main__":
             logger.debug('End')
 
     elif role == 'RELAY':
-        relay = Protocol(id=id, role=role)
+        relay = Protocol(id=id, role=role, stations=None)
         relay.setName('Thread STA receiving')
         relay.setDaemon(True)
         try:

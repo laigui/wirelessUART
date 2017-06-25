@@ -52,7 +52,7 @@ class Protocol(threading.Thread):
         MESG_NULL = BYTE_RESERVED * MESG_LENGTH
         pass
 
-    def __init__(self, id, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
+    def __init__(self, id, stations, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
                  e32_delay=5, relay_delay=1, relay_random_backoff=3):
         threading.Thread.__init__(self)
         self.thread_stop = False
@@ -68,6 +68,10 @@ class Protocol(threading.Thread):
         self._frame_no = -2
         self._max_frame_no = 25
         self._STA_led_status = '\x00'
+        self._stations = stations
+        if self._role == 'RC':
+            # only need to initialize stas_dict for RC
+            self._init_stas_dict()
         
         # for testing identification, we will update the last 2 bytes of payload with sequential number
         # _testing = True to enable this feature
@@ -109,6 +113,20 @@ class Protocol(threading.Thread):
     def __del__(self):
         if ISRPI:
             GPIO.cleanup()
+
+    def _init_stas_dict(self):
+        ''' initialize self._stations for data storage of each node
+            control data: lamp_ctrl, lamp_adj1, lamp_adj2
+            status data: lamp_ctrl_status,  lamp_adj1_status, lamp_adj2_status
+            electric data: voltage, current, power, energy, power_factor, co2, board_temperature, freq
+            environment data: pm2_5, pm10, temperature, humidity
+        '''
+        data = dict(lamp_ctrl=0, lamp_adj1=0, lamp_adj2=0, lamp_ctrl_status=0,  lamp_adj1_status=0, lamp_adj2_status=0,
+                    voltage=0.0, current=0.0, power=0.0, energy=0.0, power_factor=0.0, co2=0.0, board_temperature=0.0,
+                    freq=0.0, pm2_5=0.0, pm10=0.0, temperature=0.0, humidity=0.0)
+        for sta in self._stations.iterkeys():
+            self._stations[sta].update(data)
+        pass
 
     def _send_message(self, dest_id, message):
         assert len(message) == self.LampControl.MESG_LENGTH, 'payload length is not 5'
