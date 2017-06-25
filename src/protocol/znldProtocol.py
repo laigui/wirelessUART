@@ -264,7 +264,7 @@ class Protocol(threading.Thread):
         if self._role == 'RC':
             # broadcast frame number reset frame upon the startup to avoid STA confusing issue
             self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
-            sleep(self.hop * (self.relay_random_backoff + self.e32_delay))
+
         logger.info('Thread receiving starts running until it is stop on purpose.')
         while not self.thread_stop:
             rx_frame = self._recv_frame()

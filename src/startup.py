@@ -153,7 +153,7 @@ if __name__ == "__main__":
                 results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
             try:
                 rc.start()
-                sleep(1)
+                sleep(6)
                 loop = 0
                 led_ctrl = 0x3
                 while loop < 10000:
