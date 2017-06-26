@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #  -*- coding:utf-8 -*-
 
-__author__ = 'Mike'
+__author__ = 'Mike; Wei'
 
 import os
 try:
@@ -14,6 +14,7 @@ except:
     import tkFileDialog as filedialog
 import json
 import shutil
+import datetime
 
 
 LARGE_FONT = ("Verdana", 16)
@@ -77,6 +78,8 @@ class Application(tk.Tk):
         self.wm_title("智能路灯集控 V1.1")
         self.geometry('800x480')
 
+        self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
+
         try:
             if "nt" == os.name:
                 self.wm_iconbitmap(bitmap="logo_48x48.ico")
@@ -85,36 +88,56 @@ class Application(tk.Tk):
         except tk.TclError:
             print('no icon file found')
 
-        container = tk.Frame(self)
-        container.grid(column=0, row=0)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        self.container = tk.Frame(self)
+        self.container.grid(column=0, row=0, padx=0, pady=0)
+
+        filename = 'gui/logo.gif'
+        try:
+            img = tk.PhotoImage(file=filename)
+        except:
+            print('no gif logo file found')
+        img = img.subsample(3)
+        label_logo = ttk.Label(self.container, image=img)
+        label_logo.image = img
+        label_name = ttk.Label(self.container, text='江苏天恒智能科技出品', font=LARGE_FONT)
+        self.label_time = ttk.Label(self.container, text=self.time, font=LARGE_FONT)
+        self.label_time.grid(row=0, column=2, sticky="e", padx=(50,0))
+        label_logo.grid(row=0, column=0, sticky="w", padx=(30,0))
+        label_name.grid(row=0, column=1, sticky="w", padx=(0,200))
 
         self.frames = {}
         for F in (StartPage, PageOne, PageTwo, PageThree, PageFour):
-            frame = F(container, self)
+            frame = F(self.container, self)
             self.frames[F] = frame
-            frame.grid(row=0, column=0, sticky="nsew")  # 四个页面的位置都是 grid(row=0, column=0), 位置重叠，只有最上面的可见！！
+            frame.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=0, pady=0, ipadx=0, ipady=0)  # 四个页面的位置都是 grid(row=0, column=0), 位置重叠，只有最上面的可见！！
 
-        self.frames[StartPage].grid_columnconfigure(0, weight=1, minsize=266)
-        self.frames[StartPage].grid_columnconfigure(1, weight=1, minsize=266)
-        self.frames[StartPage].grid_columnconfigure(2, weight=1, minsize=266)
-        self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=120)
-        self.frames[StartPage].grid_rowconfigure(3, weight=1, minsize=120)
-        self.frames[StartPage].grid_rowconfigure(4, weight=1, minsize=120)
+        # TO BE DELETED
+        # self.frames[StartPage].grid_columnconfigure(0, weight=1, minsize=266)
+        # self.frames[StartPage].grid_columnconfigure(1, weight=1, minsize=266)
+        # self.frames[StartPage].grid_columnconfigure(2, weight=1, minsize=266)
+        # self.frames[StartPage].grid_rowconfigure(0, weight=1, minsize=40)
+        # self.frames[StartPage].grid_rowconfigure(1, weight=1, minsize=40)
+        # self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=120)
+        # self.frames[StartPage].grid_rowconfigure(3, weight=1, minsize=120)
+        # self.frames[StartPage].grid_rowconfigure(4, weight=1, minsize=120)
 
-        self.frames[PageOne].grid_columnconfigure(0, weight=1)
-        self.frames[PageOne].grid_columnconfigure(1, weight=1)
-        self.frames[PageOne].grid_columnconfigure(2, weight=10)
-        for row in range(len(LAMP_NAME)):
-            self.frames[PageOne].grid_rowconfigure(row, weight=1)
-        self.frames[PageOne].grid_rowconfigure(len(LAMP_NAME), weight=10)
+        # self.frames[PageOne].grid_columnconfigure(0, weight=1)
+        # self.frames[PageOne].grid_columnconfigure(1, weight=1)
+        # self.frames[PageOne].grid_columnconfigure(2, weight=10)
+        # for row in range(len(LAMP_NAME)):
+        #     self.frames[PageOne].grid_rowconfigure(row, weight=1)
+        # self.frames[PageOne].grid_rowconfigure(len(LAMP_NAME), weight=10)
 
         self.show_frame(StartPage)
 
+    def clocking(self):
+        self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
+        self.label_time.config(text=self.time)
+        self.after(1000, self.clocking)  # run itself again after 1000 ms
+
     def show_frame(self, cont):
-        frame = self.frames[cont]
-        frame.tkraise()  # 切换，提升当前 tk.Frame z轴顺序（使可见）！！此语句是本程序的点睛之处
+        self.visiable_frame = self.frames[cont]
+        self.visiable_frame.tkraise()  # 切换，提升当前 tk.Frame z轴顺序（使可见）！！此语句是本程序的点睛之处
 
     def on_all_lamps_on_button_click(self):
         """灯具全部开"""
@@ -178,16 +201,6 @@ class StartPage(tk.Frame):
             relief=[('pressed', 'groove'),
                   ('!pressed', 'ridge')])
 
-        filename = 'gui/logo.gif'
-        try:
-            img = tk.PhotoImage(file=filename)
-        except:
-            print('no gif logo file found')
-        img = img.subsample(3)
-        label1 = ttk.Label(self, image=img)
-        label1.image = img
-        label2 = ttk.Label(self, text='江苏天恒智能科技出品', font=LARGE_FONT, padding=10)
-
         button1 = ttk.Button(self, text="灯具全部开", style="BIG.TButton", command=root.on_all_lamps_on_button_click)
         button2 = ttk.Button(self, text="灯具全部关", style="BIG.TButton", command=root.on_all_lamps_off_button_click)
         button3 = ttk.Button(self, text="灯具状态查询", style="BIG.TButton", state="enabled",
@@ -200,17 +213,17 @@ class StartPage(tk.Frame):
         button8 = ttk.Button(self, text="系统网络设定", style="BIG.TButton", command=lambda: root.show_frame(PageFour))
         button9 = ttk.Button(self, text="维修模式", style="BIG.TButton", command=lambda: root.show_frame(PageThree))
 
-        label1.place(x=500, y=0)
-        label2.grid(column=1, row=0, sticky='sw')
-        button1.grid(column=0, row=2)
-        button2.grid(column=1, row=2)
-        button3.grid(column=2, row=2)
-        button4.grid(column=0, row=3)
-        button5.grid(column=1, row=3)
-        button6.grid(column=2, row=3)
-        button7.grid(column=0, row=4)
-        button8.grid(column=1, row=4)
-        button9.grid(column=2, row=4)
+        y_gap = 30
+        x_gap = 30
+        button1.grid(column=0, row=0, padx=x_gap, pady=y_gap)
+        button2.grid(column=1, row=0, padx=x_gap)
+        button3.grid(column=2, row=0, padx=x_gap)
+        button4.grid(column=0, row=1, pady=y_gap)
+        button5.grid(column=1, row=1)
+        button6.grid(column=2, row=1)
+        button7.grid(column=0, row=2, pady=y_gap)
+        button8.grid(column=1, row=2)
+        button9.grid(column=2, row=2)
 
 
 class PageOne(tk.Frame):
@@ -225,16 +238,16 @@ class PageOne(tk.Frame):
         self.leds = []
         self.col_num = 30
         self.row_pixel = 20
-        self.row_offset = 30
+        self.row_offset = 0
         self.col_offset = 100
 
         for n in range(LAMP_MAX_NUM):
-            self.leds.append(Led(self))
+            self.leds.append(Led(self, size=self.row_pixel))
             self.leds[n].place(x=self.col_offset+n%self.col_num*self.row_pixel,
                                y=self.row_offset+n//self.col_num*self.row_pixel)
 
         button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=380)
+            .place(x=300, y=350)
 
 
 class PageTwo(tk.Frame):

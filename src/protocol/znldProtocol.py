@@ -1,3 +1,8 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+__author__ = 'Wei'
+
 import binascii, ctypes, struct, Queue
 import threading
 import random
