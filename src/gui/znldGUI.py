@@ -88,47 +88,27 @@ class Application(tk.Tk):
         except tk.TclError:
             print('no icon file found')
 
-        self.container = tk.Frame(self)
-        self.container.grid(column=0, row=0, padx=0, pady=0)
-
         filename = 'gui/logo.gif'
         try:
             img = tk.PhotoImage(file=filename)
         except:
             print('no gif logo file found')
         img = img.subsample(3)
-        label_logo = ttk.Label(self.container, image=img)
+        label_logo = ttk.Label(self, image=img)
         label_logo.image = img
-        label_name = ttk.Label(self.container, text='江苏天恒智能科技出品', font=LARGE_FONT)
-        self.label_time = ttk.Label(self.container, text=self.time, font=LARGE_FONT)
+        label_name = ttk.Label(self, text='江苏天恒智能科技出品', font=LARGE_FONT)
+        self.label_time = ttk.Label(self, text=self.time, font=LARGE_FONT)
         self.label_time.grid(row=0, column=2, sticky="e", padx=(50,0))
         label_logo.grid(row=0, column=0, sticky="w", padx=(30,0))
         label_name.grid(row=0, column=1, sticky="w", padx=(0,200))
 
         self.frames = {}
         for F in (StartPage, PageOne, PageTwo, PageThree, PageFour):
-            frame = F(self.container, self)
+            frame = F(self, self)
             self.frames[F] = frame
             frame.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=0, pady=0, ipadx=0, ipady=0)  # 四个页面的位置都是 grid(row=0, column=0), 位置重叠，只有最上面的可见！！
-
-        # TO BE DELETED
-        # self.frames[StartPage].grid_columnconfigure(0, weight=1, minsize=266)
-        # self.frames[StartPage].grid_columnconfigure(1, weight=1, minsize=266)
-        # self.frames[StartPage].grid_columnconfigure(2, weight=1, minsize=266)
-        # self.frames[StartPage].grid_rowconfigure(0, weight=1, minsize=40)
-        # self.frames[StartPage].grid_rowconfigure(1, weight=1, minsize=40)
-        # self.frames[StartPage].grid_rowconfigure(2, weight=1, minsize=120)
-        # self.frames[StartPage].grid_rowconfigure(3, weight=1, minsize=120)
-        # self.frames[StartPage].grid_rowconfigure(4, weight=1, minsize=120)
-
-        # self.frames[PageOne].grid_columnconfigure(0, weight=1)
-        # self.frames[PageOne].grid_columnconfigure(1, weight=1)
-        # self.frames[PageOne].grid_columnconfigure(2, weight=10)
-        # for row in range(len(LAMP_NAME)):
-        #     self.frames[PageOne].grid_rowconfigure(row, weight=1)
-        # self.frames[PageOne].grid_rowconfigure(len(LAMP_NAME), weight=10)
-
         self.show_frame(StartPage)
+        pass
 
     def clocking(self):
         self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
