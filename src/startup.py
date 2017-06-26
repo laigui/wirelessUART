@@ -22,8 +22,8 @@ class ZNLDApp(Application):
         self.rc.setName('Thread RC receiving')
         self.rc.setDaemon(True)
         self.rc.start()
-        self.stations = stations
-        Application.__init__(self)
+        self.stations = self.rc.get_stas_dict() # get stations dict proxy reference in multiprocess env
+        Application.__init__(self, self.stations)
 
     def __del__(self):
         logger.debug('Waiting for thread end')
@@ -92,8 +92,8 @@ class ZNLDApp(Application):
             lamp_on = Protocol.LampControl.BYTE_ALL_OFF
         mesg = lamp_on + chr(lamp1_val) + chr(lamp2_val) + Protocol.LampControl.BYTE_RESERVED
 
-        for id in stations.keys():
-            if stations[id]['addr'] == node_addr:
+        for id in self.stations.keys():
+            if self.stations[id]['addr'] == node_addr:
                 logger.info('unicast to STA (%s) mesg = %s' % (id, binascii.b2a_hex(mesg)))
                 self.rc.RC_lamp_ctrl(binascii.a2b_hex(id), mesg)
                 break

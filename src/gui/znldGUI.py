@@ -69,7 +69,7 @@ class SimpleTable(tk.Frame):
 class Application(tk.Tk):
     """多页面演示程序"""
 
-    def __init__(self):
+    def __init__(self, stations):
         try:
             super().__init__()
         except TypeError:
@@ -79,6 +79,7 @@ class Application(tk.Tk):
         self.geometry('800x480')
 
         self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
+        self._stations = stations
 
         try:
             if "nt" == os.name:
@@ -221,14 +222,50 @@ class PageOne(tk.Frame):
         self.row_offset = 0
         self.col_offset = 100
 
-        for n in range(LAMP_MAX_NUM):
-            self.leds.append(Led(self, size=self.row_pixel))
-            self.leds[n].place(x=self.col_offset+n%self.col_num*self.row_pixel,
-                               y=self.row_offset+n//self.col_num*self.row_pixel)
+        # calculation the lamps layout from the max_diameter down to the min_diameter
+        max_x = 600
+        max_y = 300
+        min_icon_diameter = 20
+        icon_diameter = min_icon_diameter
+        max_icon_diameter_x = 6
+        lamp_num = len(root._stations)
 
-        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=350)
+        i = max_icon_diameter_x
+        while i != 0:
+            max_nx = max_x / min_icon_diameter / i
+            max_ny = max_y / min_icon_diameter / i
+            if max_nx * max_ny < lamp_num:
+                # can't fit into with the current diameter, so decrease
+                i = i - 1
+                continue
+            else:
+                n_row = lamp_num / max_nx
+                n_remained = lamp_num % max_nx
+                icon_diameter = min_icon_diameter * i
+                break
 
+        row = 0
+        idx = 0
+        for n in range(lamp_num):
+            led = Led(self, size=icon_diameter)
+            self.leds.append(led)
+            if idx == 0:
+                padxl = 40
+                padxr = 1
+            elif idx == (max_nx - 1):
+                padxl = 1
+                padxr = 40
+            else:
+                padxl = 1
+                padxr = 1
+            led.grid(row=row, column=idx, padx=(padxl, padxr), pady=0)
+            idx += 1
+            if idx == max_nx:
+                row += 1
+                idx = 0
+
+        button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
+        button_back.grid(row=row+1, columnspan=max_nx)
 
 class PageTwo(tk.Frame):
     """环境数据检测页面"""
