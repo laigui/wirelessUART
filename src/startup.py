@@ -203,7 +203,7 @@ if __name__ == "__main__":
             logger.debug('running in GUI mode')
             # 实例化Application
             app = ZNLDApp(stations)
-            app.clocking()
+            #app.clocking()
             # 主消息循环:
             app.mainloop()
 

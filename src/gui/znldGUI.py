@@ -25,7 +25,7 @@ LAMP_MAX_NUM = 512
 
 class Led(tk.Canvas):
     """ (indicator) a LED """
-    # color is on_color when status is 1, off_color when status is 0 "
+    # color is on_color when status is on, off_color when status is off "
 
     def __init__(self, master, off_color="red", on_color="green", size=20, **kw):
         tk.Canvas.__init__(self, master, width=size, height=size, bd=0)
@@ -35,7 +35,7 @@ class Led(tk.Canvas):
         self.itemconfig(self.oh, fill=off_color)
 
     def update(self, status):
-        if status == 1:
+        if status == 'on':
             self.itemconfig(self.oh, fill=self.on_color)
         else:
             self.itemconfig(self.oh, fill=self.off_color)
@@ -109,6 +109,7 @@ class Application(tk.Tk):
             self.frames[F] = frame
             frame.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=0, pady=0, ipadx=0, ipady=0)  # 四个页面的位置都是 grid(row=0, column=0), 位置重叠，只有最上面的可见！！
         self.show_frame(StartPage)
+        self.after(1000, self.clocking)
         pass
 
     def clocking(self):
@@ -216,11 +217,8 @@ class PageOne(tk.Frame):
         except TypeError:
             tk.Frame.__init__(self)
 
-        self.leds = []
-        self.col_num = 30
-        self.row_pixel = 20
-        self.row_offset = 0
-        self.col_offset = 100
+        self.leds = {}
+        self.stations = root._stations
 
         # calculation the lamps layout from the max_diameter down to the min_diameter
         max_x = 600
@@ -228,7 +226,7 @@ class PageOne(tk.Frame):
         min_icon_diameter = 20
         icon_diameter = min_icon_diameter
         max_icon_diameter_x = 6
-        lamp_num = len(root._stations)
+        lamp_num = len(self.stations)
 
         i = max_icon_diameter_x
         while i != 0:
@@ -246,9 +244,9 @@ class PageOne(tk.Frame):
 
         row = 0
         idx = 0
-        for n in range(lamp_num):
-            led = Led(self, size=icon_diameter)
-            self.leds.append(led)
+        for id in self.stations.iterkeys():
+            led = {id: Led(self, size=icon_diameter)}
+            self.leds.update(led)
             if idx == 0:
                 padxl = 40
                 padxr = 1
@@ -258,14 +256,26 @@ class PageOne(tk.Frame):
             else:
                 padxl = 1
                 padxr = 1
-            led.grid(row=row, column=idx, padx=(padxl, padxr), pady=0)
+            led[id].grid(row=row, column=idx, padx=(padxl, padxr), pady=0)
             idx += 1
             if idx == max_nx:
                 row += 1
                 idx = 0
 
         button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
-        button_back.grid(row=row+1, columnspan=max_nx)
+        button_back.grid(row=row+1, columnspan=max_nx, padx=300, pady=10)
+        self.update()
+
+    def update(self):
+        for id in self.stations.iterkeys():
+            if self.stations[id]['lamp_ctrl_status']:
+                self.leds[id].update(status='on')
+                self.stations[id]['lamp_ctrl_status'] = 0
+            else:
+                self.leds[id].update(status='off')
+                self.stations[id]['lamp_ctrl_status'] = 0x3
+        self.after(3000, self.update)  # run itself again after 3000 ms
+
 
 class PageTwo(tk.Frame):
     """环境数据检测页面"""
