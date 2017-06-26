@@ -389,7 +389,7 @@ class PageFour(tk.Frame):
 
         self.v = tk.StringVar()
         entry = ttk.Entry(self, width=80, textvariable=self.v)
-        entry.pack(side="top", anchor="center", pady=10)
+        entry.grid(row=0, pady=10, padx=100)
 
         def callback():
             entry.delete(0, "end")  # 清空entry里面的内容
@@ -399,19 +399,19 @@ class PageFour(tk.Frame):
                 entry.insert(0, filename)  # 将选择好的文件加入到entry里面
 
         button1 = ttk.Button(self, text="打开配置文件", style="MID.TButton", command=callback)
-        button1.pack(side="top", anchor="center", pady=10)
+        button1.grid(row=1, pady=10)
 
         button2 = ttk.Button(self, text="加载配置", style="MID.TButton",
                              command=lambda: self.load_user_config_file(parent, root))
-        button2.pack(side="top", anchor="center")
+        button2.grid(row=2)
 
         button3 = ttk.Button(self, text="导出日志", style="MID.TButton",
                              command=self.save_log_file)
-        button3.pack(side="top", anchor="center", pady=50)
+        button3.grid(row=3, pady=50)
 
-        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton",
+        button_back = ttk.Button(self, text="回到主页", style="BIG.TButton",
                              command=lambda: root.show_frame(StartPage))
-        button0.place(x=300, y=350)
+        button_back.grid(row=4)
 
     def load_user_config_file(self, parent, root):
         """加载用户配置文件"""
