@@ -311,37 +311,39 @@ class PageThree(tk.Frame):
                           ('!pressed', 'ridge')])
 
         self.label1 = ttk.Label(self, text="该组节点数为:", font=LARGE_FONT)
-        self.label1.place(x=10, y=10)
+        self.label1.grid(row=0, column=0, padx=(20,10))
         self.lamp_num = tk.StringVar()
+        self.lamp_num.set(len(root._stations))
         self.label2 = ttk.Label(self, textvariable=self.lamp_num, font=LARGE_FONT)
-        self.label2.place(x=150, y=10)
+        self.label2.grid(row=0, column=1)
         self.label3 = ttk.Label(self, text="节点号", font=LARGE_FONT)
-        self.label3.place(x=10, y=70)
+        self.label3.grid(row=1, column=0)
         self.spinboxes = []
         for n in range(3):
             if n == 0:
                 self.spinboxes.append(tk.Spinbox(self, from_=0, to=5, font=("Verdana", 30), width=3))
             else:
                 self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
-            self.spinboxes[n].place(x=100+n*120, y=60)
+            self.spinboxes[n].grid(row=1, column=n+1, pady=(1,20))
         self.label4 = ttk.Label(self, text="调光1", font=LARGE_FONT)
-        self.label4.place(x=500, y=50)
+        self.label4.grid(row=0, column=4, padx=(20,10))
         self.label5 = ttk.Label(self, text="调光2", font=LARGE_FONT)
-        self.label5.place(x=500, y=100)
+        self.label5.grid(row=1, column=4, padx=(20,10))
 
         self.var1 = tk.IntVar()
         self.progbar1 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
                                  length=200, variable=self.var1)
-        self.progbar1.place(x=560, y=30)
+        self.progbar1.grid(row=0, column=5)
         self.var2 = tk.IntVar()
         self.progbar2 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
                                  length=200, variable=self.var2)
-        self.progbar2.place(x=560, y=80)
+        self.progbar2.grid(row=1, column=5)
 
-        button1 = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)\
-            .place(x=400, y=150, anchor=tk.CENTER)
+        button_okay = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)
+        button_okay.grid(row=2, columnspan=6)
+
         t = SimpleTable(self, 3, 4)
-        t.place(x=70, y=200)
+        t.grid(row=3, columnspan=6, pady=20)
         t.set(0, 0, '工作状态')
         t.set(0, 2, '工作电流')
         t.set(1, 0, '工作电压')
@@ -372,8 +374,8 @@ class PageThree(tk.Frame):
         # self.checks[1].configure(variable=v1, command=lambda: root.on_lamp_status_set_checkbutton_click(1, v1.get()))
         # self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
 
-        button0 = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage)) \
-            .place(x=300, y=350)
+        button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
+        button_back.grid(row=4, columnspan=6)
 
 
 class PageFour(tk.Frame):
