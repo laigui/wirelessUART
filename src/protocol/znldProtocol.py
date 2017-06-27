@@ -7,6 +7,8 @@ import binascii, ctypes, struct, Queue
 import threading
 import random
 from time import sleep
+from multiprocessing import Process, Manager, Pipe
+from multiprocessing.managers import SyncManager
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,46 +25,65 @@ from libs.E32Serial import E32
 from libs.myException import *
 
 
-class Protocol(threading.Thread):
-    class LampControl:
-        MESG_LENGTH = 5
-        BROADCAST_ID = '\x00\x00\x00\x00\x00\x00'
-        FRAME_HEADER = '\x55\x55'
-        BYTE_RESERVED = '\x00'
-        BYTE_ALL_OFF = '\x00'
-        BYTE_ALL_ON = '\x03'
-        BYTE_LEFT_ON = '\x01'
-        BYTE_RIGHT_ON = '\x02'
-        TAG_SN = '\x00'
-        TAG_ACK = '\x01'
-        TAG_NACK = '\x02'
-        TAG_LAMP_CTRL = '\x05'
-        TAG_POLL = '\x03'
-        TAG_POLL_ACK = '\x04'
+class LampControl:
+    MESG_LENGTH = 5
+    BROADCAST_ID = '\x00\x00\x00\x00\x00\x00'
+    FRAME_HEADER = '\x55\x55'
+    BYTE_RESERVED = '\x00'
+    BYTE_ALL_OFF = '\x00'
+    BYTE_ALL_ON = '\x03'
+    BYTE_LEFT_ON = '\x01'
+    BYTE_RIGHT_ON = '\x02'
+    TAG_SN = '\x00'
+    TAG_ACK = '\x01'
+    TAG_NACK = '\x02'
+    TAG_LAMP_CTRL = '\x05'
+    TAG_POLL = '\x03'
+    TAG_POLL_ACK = '\x04'
 
-        TAG_DICT = {TAG_SN: 'SN update',
-                    TAG_ACK: 'ACK',
-                    TAG_NACK: 'NACK',
-                    TAG_LAMP_CTRL: 'Lamp control',
-                    TAG_POLL: 'Poll',
-                    TAG_POLL_ACK: 'Poll ACK',}
+    TAG_DICT = {TAG_SN: 'SN update',
+                TAG_ACK: 'ACK',
+                TAG_NACK: 'NACK',
+                TAG_LAMP_CTRL: 'Lamp control',
+                TAG_POLL: 'Poll',
+                TAG_POLL_ACK: 'Poll ACK', }
 
-        MESG_VALUE_LAMP_ALL_ON = BYTE_ALL_ON + '\xFF' * 2 + BYTE_RESERVED
-        MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_ON
-        MESG_VALUE_LAMP_ALL_OFF = BYTE_ALL_OFF + BYTE_RESERVED * 3
-        MESG_LAMP_ALL_OFF = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_OFF
-        MESG_ACK = TAG_ACK + BYTE_RESERVED * (MESG_LENGTH - 1)
-        MESG_NACK = TAG_NACK + BYTE_RESERVED * (MESG_LENGTH - 1)
-        MESG_POLL = TAG_POLL + BYTE_RESERVED * (MESG_LENGTH - 1)
-        MESG_NULL = BYTE_RESERVED * MESG_LENGTH
+    MESG_VALUE_LAMP_ALL_ON = BYTE_ALL_ON + '\xFF' * 2 + BYTE_RESERVED
+    MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_ON
+    MESG_VALUE_LAMP_ALL_OFF = BYTE_ALL_OFF + BYTE_RESERVED * 3
+    MESG_LAMP_ALL_OFF = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_OFF
+    MESG_ACK = TAG_ACK + BYTE_RESERVED * (MESG_LENGTH - 1)
+    MESG_NACK = TAG_NACK + BYTE_RESERVED * (MESG_LENGTH - 1)
+    MESG_POLL = TAG_POLL + BYTE_RESERVED * (MESG_LENGTH - 1)
+    MESG_NULL = BYTE_RESERVED * MESG_LENGTH
+
+
+class ThreadRx(threading.Thread):
+    '''
+    Protocol Rx thread
+    Using Queue to send received frames to the main thread for processing
+    '''
+    def __init__(self, pipe, name='Routine frames receiving', daemon=True, **kwargs):
+        self._pipe = pipe # cmds input and results output pipe
+        super(ThreadRx, self).__init__()
+
+    def run(self):
         pass
 
+
+class Protocol(Process):
+    '''
+    The main process of the protocol.
+    The main thread deals with TX loop & RX processing, and have another thread dealing with RX loop.
+    Using Pipe for GUI commands input and results output.
+    Using shared multiProcessing Queue for commands input from remote processes, e.g. cron task.
+    Using shared stations dictionary to update lamp status in GUI
+    '''
     def __init__(self, id, stations, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
-                 e32_delay=5, relay_delay=1, relay_random_backoff=3):
-        threading.Thread.__init__(self)
+                 e32_delay=5, relay_delay=1, relay_random_backoff=3, **kwargs):
+        super(Protocol, self).__init__()
         self.thread_stop = False
         self._retry = retry
-        self._RC_queue = Queue.Queue(0) # create no limited queue
         self._role = role # three roles: 'RC', 'STA', 'RELAY'
         assert role=='RC' or role=='STA' or role=='RELAY', 'Protocol role mistake!'
         self._id = id
@@ -73,7 +94,8 @@ class Protocol(threading.Thread):
         self._frame_no = -2
         self._max_frame_no = 25
         self._STA_led_status = '\x00'
-        self.stations = stations
+        self.stations = stations # dictionary for station's info storage
+
         if self._role == 'RC':
             # only need to initialize stas_dict for RC
             self._init_stas_dict()
@@ -82,20 +104,20 @@ class Protocol(threading.Thread):
         # _testing = True to enable this feature
         if testing == 'TRUE':
             self._testing = True
+            self._count = 0
         else:
             self._testing = False
-        self._count = 0
+
 
         self._GPIO_LED = 21
         if ISRPI:
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(self._GPIO_LED, GPIO.OUT)
-
-        if ISRPI:
             port = '/dev/ttyS0'
         else:
             port = '/dev/ttyUSB0'
+
         self.ser = E32(port=port, inHex=False)
         if self.ser.open() == False:
             self.thread_stop = True
@@ -115,9 +137,16 @@ class Protocol(threading.Thread):
                     % (self._role, binascii.b2a_hex(self._id), repr(self.timeout), repr(self.e32_delay),
                        repr(self.relay_delay), repr(self.relay_random_backoff), repr(self.hop)))
 
+        self.p_cmd, self._p_cmd = Pipe() # pipe for gui control commands & results communication
+        self._Rx_queue = Queue.Queue(0)  # create no limited queue for RX frames
+        self._t_rx = ThreadRx(self._Rx_queue) # Thread for rx frames processing
+
     def __del__(self):
         if ISRPI:
             GPIO.cleanup()
+
+    def get_cmd_pipe(self):
+        return self.p_cmd
 
     def get_stas_dict(self):
         return self.stations
@@ -137,7 +166,7 @@ class Protocol(threading.Thread):
         pass
 
     def _send_message(self, dest_id, message):
-        assert len(message) == self.LampControl.MESG_LENGTH, 'payload length is not 5'
+        assert len(message) == LampControl.MESG_LENGTH, 'payload length is not 5'
         if self._role == 'RC':
             # have to increase it by 2 to avoid conflicting with STA's response when it isn't received by RC
             self._frame_no += 2
@@ -146,15 +175,15 @@ class Protocol(threading.Thread):
 
         tx_str_reset_sn = None
         if self._frame_no >= self._max_frame_no and self._role == 'RC':
-            if dest_id != self.LampControl.BROADCAST_ID:
+            if dest_id != LampControl.BROADCAST_ID:
                 self._frame_no = 0
-                tx_str_reset_sn = self.LampControl.FRAME_HEADER + self._id + self.LampControl.BROADCAST_ID\
-                         + chr(self._frame_no) + self.LampControl.MESG_NULL
+                tx_str_reset_sn = LampControl.FRAME_HEADER + self._id + LampControl.BROADCAST_ID\
+                         + chr(self._frame_no) + LampControl.MESG_NULL
                 self._frame_no = 1
             else:
                 # no need to send 2nd broadcast frame if it is already broadcast.
                 self._frame_no = 0
-        tx_str_message = self.LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
+        tx_str_message = LampControl.FRAME_HEADER + self._id + dest_id + chr(self._frame_no) + message
         if tx_str_reset_sn:
             tx_str_list = [tx_str_reset_sn, tx_str_message]
         else:
@@ -202,7 +231,7 @@ class Protocol(threading.Thread):
         while not done:
             rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
             if not got_header:
-                index = rx_str.find(self.LampControl.FRAME_HEADER)
+                index = rx_str.find(LampControl.FRAME_HEADER)
                 if index == -1:
                     rx_str = ''
                 else:
@@ -240,29 +269,29 @@ class Protocol(threading.Thread):
         value = rx_frame[16:20]
         update_frame_no = False
 
-        if dest_id == self._id or dest_id == self.LampControl.BROADCAST_ID:
+        if dest_id == self._id or dest_id == LampControl.BROADCAST_ID:
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
                 update_frame_no = True
                 self._frame_no = sn
-                if self.LampControl.TAG_DICT.has_key(tag):
+                if LampControl.TAG_DICT.has_key(tag):
                     # need to deal with different protocol TAG here
-                    if tag == self.LampControl.TAG_LAMP_CTRL:
+                    if tag == LampControl.TAG_LAMP_CTRL:
                         logger.debug('got TAG_LAMP_CTRL')
                         self._STA_do_lamp_ctrl(value)
-                        if dest_id != self.LampControl.BROADCAST_ID:
+                        if dest_id != LampControl.BROADCAST_ID:
                             logger.debug('sent ACK')
-                            self._send_message(src_id, self.LampControl.MESG_ACK)
+                            self._send_message(src_id, LampControl.MESG_ACK)
                         else:
                             logger.debug('no ACK to broadcast')
-                    elif tag == self.LampControl.TAG_POLL:
+                    elif tag == LampControl.TAG_POLL:
                         logger.debug('got TAG_POLL')
-                        MESG_POLL_ACK = self.LampControl.TAG_POLL_ACK + self._STA_led_status \
-                                        + self.LampControl.BYTE_RESERVED * 3
+                        MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_led_status \
+                                        + LampControl.BYTE_RESERVED * 3
                         self._send_message(src_id, MESG_POLL_ACK)
                 else:
                     logger.debug('got unknown CMD TAG, sent NACK')
-                    self._send_message(src_id, self.LampControl.MESG_NACK)
+                    self._send_message(src_id, LampControl.MESG_NACK)
             else:
                 logger.debug('duplicated frame received')
 
@@ -289,14 +318,14 @@ class Protocol(threading.Thread):
     def run(self):
         if self._role == 'RC':
             # broadcast frame number reset frame upon the startup to avoid STA confusing issue
-            self._send_message(self.LampControl.BROADCAST_ID, self.LampControl.MESG_NULL)
+            self._send_message(LampControl.BROADCAST_ID, LampControl.MESG_NULL)
 
         logger.info('Thread receiving starts running until it is stop on purpose.')
         while not self.thread_stop:
             rx_frame = self._recv_frame()
             if self._role == 'RC':
                 # place rx_frame into queue for RC tx routine process
-                self._RC_queue.put(rx_frame)
+                self._Rx_queue.put(rx_frame)
             else:
                 # process here for STA & RELAY
                 self._STA_frame_process(rx_frame)
@@ -306,7 +335,7 @@ class Protocol(threading.Thread):
         self.thread_stop = True
 
     def _STA_do_lamp_ctrl(self, value):
-        if value[0] == self.LampControl.BYTE_ALL_ON:
+        if value[0] == LampControl.BYTE_ALL_ON:
             logger.info('LED ALL ON')
             if ISRPI:
                 GPIO.output(self._GPIO_LED, GPIO.LOW)
@@ -321,8 +350,8 @@ class Protocol(threading.Thread):
         result = False
         while result == False:
             try:
-                rx_frame = self._RC_queue.get(True, timeout)
-                self._RC_queue.task_done()
+                rx_frame = self._Rx_queue.get(True, timeout)
+                self._Rx_queue.task_done()
             except Queue.Empty:
                 raise RxTimeOut
             else:
@@ -333,7 +362,7 @@ class Protocol(threading.Thread):
                 if rx_src_id == src_id and rx_dest_id == self._id:
                     if rx_sn > self._frame_no:
                         self._frame_no = rx_sn
-                        if rx_tag == self.LampControl.TAG_NACK:
+                        if rx_tag == LampControl.TAG_NACK:
                             raise RxNack
                         elif rx_tag == tag:
                             result = True
@@ -351,13 +380,13 @@ class Protocol(threading.Thread):
         :return: True on success, False on failure
         '''
         count = 0
-        mesg = self.LampControl.MESG_POLL
+        mesg = LampControl.MESG_POLL
         logger.info('RC send POLL to STA (%s)' % binascii.b2a_hex(dest_id))
         while count < self._retry:
             logger.info('RC send message %s times' % str(count + 1))
             self._send_message(dest_id, mesg)
             try:
-                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_POLL_ACK, timeout=self.timeout)
+                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=LampControl.TAG_POLL_ACK, timeout=self.timeout)
                 if result:
                     if data[1] == expected:
                         return True
@@ -381,18 +410,18 @@ class Protocol(threading.Thread):
         :return: True on success, False on failure
         '''
         count = 0
-        mesg = self.LampControl.TAG_LAMP_CTRL + value
+        mesg = LampControl.TAG_LAMP_CTRL + value
         logger.info('RC send lamp ctrl (%s) to STA (%s)' %
                     (binascii.b2a_hex(value), binascii.b2a_hex(dest_id)))
         while count < self._retry:
             logger.info('RC send message %s times' % str(count+1))
             self._send_message(dest_id, mesg)
-            if dest_id == self.LampControl.BROADCAST_ID:
+            if dest_id == LampControl.BROADCAST_ID:
                 # no response is expected on broadcast TX
                 logger.info('Broadcast mesg: %s' % binascii.b2a_hex(mesg))
                 return True
             try:
-                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=self.LampControl.TAG_ACK, timeout=self.timeout)
+                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=LampControl.TAG_ACK, timeout=self.timeout)
                 if result:
                     logger.info('RC got TAG_ACK from STA (%s)' % binascii.b2a_hex(dest_id))
                     return True
