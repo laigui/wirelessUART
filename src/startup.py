@@ -18,15 +18,14 @@ class ZNLDApp(Application):
     def __init__(self, stations):
         self.rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                            testing = testing, timeout = timeout, e32_delay = e32_delay, relay_delay = relay_delay,
-                           relay_random_backoff = relay_random_backoff, stations=stations)
-        self.rc.setName('Thread RC receiving')
-        self.rc.setDaemon(True)
+                           relay_random_backoff = relay_random_backoff, stations=stations,
+                           daemon=True, name='Routine RC receiving')
         self.rc.start()
         self.stations = self.rc.get_stas_dict() # get stations dict proxy reference in multiprocess env
         Application.__init__(self, self.stations)
 
     def __del__(self):
-        logger.debug('Waiting for thread end')
+        logger.debug('Waiting for routine end')
         self.rc.join()
         logger.debug('End')
 
@@ -144,16 +143,14 @@ if __name__ == "__main__":
             logger.debug('running in non-GUI mode')
             rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                           testing=testing, timeout=timeout, e32_delay=e32_delay, relay_delay=relay_delay,
-                          relay_random_backoff=relay_random_backoff, stations=stations)
-            rc.setName('Thread RC receiving')
-            rc.setDaemon(True)
+                          relay_random_backoff=relay_random_backoff, stations=stations,
+                          daemon = True, name = 'Routine RC receiving')
             results = {}
             for id in stations.keys():
                 name = stations[id]['name']
                 results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
             try:
                 rc.start()
-                sleep(6)
                 loop = 0
                 led_ctrl = 0x3
                 while loop < 10000:
@@ -161,8 +158,8 @@ if __name__ == "__main__":
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
                     rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
-                    # need to consider network delay here given relay node number
-                    sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
+                    # TODO: ? need a delay to avoid broadcast storm
+                    #sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
                     logger.info('poll led status from each STA:')
                     for id in stations.keys():
                         name = stations[id]['name']
@@ -181,8 +178,8 @@ if __name__ == "__main__":
                             logger.info('RC got expected TAG_POLL_ACK from STA (%s)' % id)
                             logger.info('%s (%s) response successfully' % (name, id))
                             results[name]['OK'] += 1
-                        # need to consider network delay here given relay node number
-                        sleep(rc.hop * (rc.e32_delay + rc.relay_delay + rc.relay_random_backoff))
+                        # need a delay to avoid broadcast storm
+                        sleep(rc.e32_delay + rc.hop * (rc.relay_delay + rc.relay_random_backoff))
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
@@ -190,13 +187,13 @@ if __name__ == "__main__":
                     else:
                         led_ctrl = 0x0
             except KeyboardInterrupt:
-                logger.debug('Stopping Thread by Ctrl-C')
+                logger.debug('Stopping routine by Ctrl-C')
                 rc.stop()
             except:
                 import traceback
                 traceback.print_exc()
             finally:
-                logger.debug('Waiting for thread end')
+                logger.debug('Waiting for routine end')
                 rc.join()
                 logger.debug('End')
         else:
@@ -207,42 +204,21 @@ if __name__ == "__main__":
             # 主消息循环:
             app.mainloop()
 
-    elif role == 'STA':
-        sta = Protocol(id=id, role=role, stations=None)
-        sta.setName('Thread STA receiving')
-        sta.setDaemon(True)
+    elif role == 'RELAY' or role == 'STA':
+        node = Protocol(id=id, role=role, stations=None, daemon=True, name='Routine STA receiving')
         try:
-            sta.start()
+            node.start()
             while True:
                 sleep(1)
         except KeyboardInterrupt:
-            logger.debug('Stopping Thread by Ctrl-C')
-            sta.stop()
+            logger.debug('Stopping routine by Ctrl-C')
+            node.stop()
         except:
             import traceback
             traceback.print_exc()
         finally:
-            logger.debug('Waiting for thread end')
-            sta.join()
-            logger.debug('End')
-
-    elif role == 'RELAY':
-        relay = Protocol(id=id, role=role, stations=None)
-        relay.setName('Thread STA receiving')
-        relay.setDaemon(True)
-        try:
-            relay.start()
-            while True:
-                sleep(1)
-        except KeyboardInterrupt:
-            logger.debug('Stopping Thread by Ctrl-C')
-            relay.stop()
-        except:
-            import traceback
-            traceback.print_exc()
-        finally:
-            logger.debug('Waiting for thread end')
-            relay.join()
+            logger.debug('Waiting for routine end')
+            node.join()
             logger.debug('End')
 
     else:
