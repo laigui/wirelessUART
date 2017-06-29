@@ -107,11 +107,13 @@ class ThreadRx(threading.Thread):
     Protocol Rx thread
     Using Queue to send received frames to the main thread for processing
     '''
-    def __init__(self, role, id, queue, name='Routine frames receiving', daemon=True, **kwargs):
+    def __init__(self, role, id, queue, frame_len, serial, name='Routine frames receiving', daemon=True, **kwargs):
         self._role = role
         self._id = id
         self._frames = queue # cmds input and results output pipe
         self._stop = False
+        self._rx_frame_len = frame_len
+        self.ser = serial
         super(ThreadRx, self).__init__()
 
     def run(self):
@@ -131,6 +133,43 @@ class ThreadRx(threading.Thread):
 
     def stop(self):
         self._stop = True
+
+    def _recv_frame(self):
+        '''
+        check the frame header and later the checksum, return the whole frame until the checksum is correct.
+        :return: the received frame
+        '''
+        done = False
+        got_header = False
+        rx_str = ''
+        rx_len = self._rx_frame_len
+        while not done:
+            rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
+            if not got_header:
+                index = rx_str.find(LampControl.FRAME_HEADER)
+                if index == -1:
+                    rx_str = ''
+                else:
+                    got_header = True
+                    rx_str = rx_str[index:]
+                    rx_len = index
+            else:
+                rx_crc = rx_str[-2 :]
+                str_payload = rx_str[0 : self._rx_frame_len-2]
+                crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
+                if crc == rx_crc:
+                    done = True
+                else:
+                    got_header = False
+                    rx_str = rx_str[2 :]
+                    rx_len = 2
+                    logger.error('A frame is received: %s', binascii.b2a_hex(rx_str))
+                    logger.error('Payload: %s', binascii.b2a_hex(str_payload))
+                    logger.error('RX CRC: %s', binascii.b2a_hex(rx_crc))
+                    logger.error('calculated CRC: %s', binascii.b2a_hex(crc))
+                    logger.error('CRC check failed, remove Header and continue')
+        logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
+        return rx_str
 
 
 class Protocol(Process):
@@ -201,7 +240,10 @@ class Protocol(Process):
 
         self.p_cmd, self._p_cmd = Pipe() # pipe for gui control commands & results communication
         self._Rx_queue = Queue.Queue(0)  # create no limited queue for RX frames
-        self._t_rx = ThreadRx(role=self._role, queue=self._Rx_queue, id=self._id) # Thread for rx frames processing
+        self._t_rx = ThreadRx(role=self._role, queue=self._Rx_queue, id=self._id,
+                              frame_len=self._rx_frame_len, serial=self.ser) # Thread for rx frames processing
+
+
 
     def __del__(self):
         self._t_rx.stop()
@@ -285,43 +327,6 @@ class Protocol(Process):
             except:
                 logger.error('Tx error!')
 
-    def _recv_frame(self):
-        '''
-        check the frame header and later the checksum, return the whole frame until the checksum is correct.
-        :return: the received frame
-        '''
-        done = False
-        got_header = False
-        rx_str = ''
-        rx_len = self._rx_frame_len
-        while not done:
-            rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
-            if not got_header:
-                index = rx_str.find(LampControl.FRAME_HEADER)
-                if index == -1:
-                    rx_str = ''
-                else:
-                    got_header = True
-                    rx_str = rx_str[index:]
-                    rx_len = index
-            else:
-                rx_crc = rx_str[-2 :]
-                str_payload = rx_str[0 : self._rx_frame_len-2]
-                crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
-                if crc == rx_crc:
-                    done = True
-                else:
-                    got_header = False
-                    rx_str = rx_str[2 :]
-                    rx_len = 2
-                    logger.error('A frame is received: %s', binascii.b2a_hex(rx_str))
-                    logger.error('Payload: %s', binascii.b2a_hex(str_payload))
-                    logger.error('RX CRC: %s', binascii.b2a_hex(rx_crc))
-                    logger.error('calculated CRC: %s', binascii.b2a_hex(crc))
-                    logger.error('CRC check failed, remove Header and continue')
-        logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
-        return rx_str
-
     def _STA_frame_process(self, rx_frame):
         '''
         STA/RELAY received frame processing per the protocol
@@ -384,6 +389,7 @@ class Protocol(Process):
                     self._forward_frame(rx_frame)
 
     def run(self):
+        self._t_rx.start()
         logger.info('Thread transmitting starts running ...')
 
         if self._role == 'RC':

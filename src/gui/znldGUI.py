@@ -99,9 +99,9 @@ class Application(tk.Tk):
         label_logo.image = img
         label_name = ttk.Label(self, text='江苏天恒智能科技出品', font=LARGE_FONT)
         self.label_time = ttk.Label(self, text=self.time, font=LARGE_FONT)
-        self.label_time.grid(row=0, column=2, sticky="e", padx=(50,0))
+        self.label_time.grid(row=0, column=2, sticky="e", padx=(0,100))
         label_logo.grid(row=0, column=0, sticky="w", padx=(30,0))
-        label_name.grid(row=0, column=1, sticky="w", padx=(0,200))
+        label_name.grid(row=0, column=1, sticky="w", padx=(0,250))
 
         self.frames = {}
         for F in (StartPage, PageOne, PageTwo, PageThree, PageFour):

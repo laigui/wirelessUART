@@ -27,8 +27,9 @@ class ZNLDApp(Application):
 
     def __del__(self):
         logger.debug('Waiting for routine end')
-        while self.p_cmd.poll():
-            self.p_cmd.recv()
+        #TODO: how to clear pipe & queue on destroy
+        # if self.p_cmd.poll(3):
+        #     self.p_cmd.recv()
         self.rc.stop()
         self.rc.join()
         logger.debug('End')
