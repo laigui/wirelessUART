@@ -484,6 +484,7 @@ class Protocol(Process):
                                 cmd.cmd_result = False
                             self._ack_cmd(cmd)
                         elif cmd.message[0] == LampControl.TAG_LAMP_CTRL:
+                            id = binascii.b2a_hex(cmd.dest_id)
                             logger.info('RC send lamp ctrl (%s) to STA (%s)' % (binascii.b2a_hex(cmd.message), dest_id))
                             self.stations[id]['lamp_ctrl'] = cmd.message[1]
                             self.stations[id]['lamp_adj1'] = cmd.message[2]
@@ -559,10 +560,10 @@ class Protocol(Process):
     def _RC_wait_for_resp(self, src_id, tag, timeout):
         try:
             rx_frame = self._Rx_queue.get(True, timeout)
-            self._Rx_queue.task_done()
         except Queue.Empty:
             raise RxTimeOut
         else:
+            self._Rx_queue.task_done()
             rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
             rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
             rx_sn = ord(rx_frame[LampControl.SN])
