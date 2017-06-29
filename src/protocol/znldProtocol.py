@@ -64,16 +64,33 @@ class LampControl:
     TAG_SN = '\x00'
     TAG_ACK = '\x01'
     TAG_NACK = '\x02'
-    TAG_LAMP_CTRL = '\x05'
     TAG_POLL = '\x03'
     TAG_POLL_ACK = '\x04'
+    TAG_LAMP_CTRL = '\x05'
+    TAG_POWER1_POLL = '\x06'
+    TAG_POWER1_ACK = '\x07'
+    TAG_POWER2_POLL = '\x08'
+    TAG_POWER2_ACK = '\x09'
+    TAG_ENV1_POLL = '\x0A'
+    TAG_ENV1_ACK = '\x0B'
+    TAG_ENV2_POLL = '\x0C'
+    TAG_ENV2_ACK = '\x0D'
 
-    TAG_DICT = {TAG_SN: 'SN update',
-                TAG_ACK: 'ACK',
-                TAG_NACK: 'NACK',
-                TAG_LAMP_CTRL: 'Lamp control',
-                TAG_POLL: 'Poll',
-                TAG_POLL_ACK: 'Poll ACK', }
+    TAG_DICT = {TAG_SN: 'TAG for SN update',
+                TAG_ACK: 'TAG for ACK response',
+                TAG_NACK: 'TAG for NACK response',
+                TAG_POLL: 'TAG for poll',
+                TAG_POLL_ACK: 'TAG for poll response',
+                TAG_LAMP_CTRL: 'TAG for lamp control',
+                TAG_POWER1_POLL: 'TAG for power status poll',
+                TAG_POWER1_ACK: 'TAG for ',
+                TAG_POWER2_POLL: 'TAG for ',
+                TAG_POWER2_ACK: 'TAG for ',
+                TAG_ENV1_POLL: 'TAG for ',
+                TAG_ENV1_ACK: 'TAG for ',
+                TAG_ENV2_POLL: 'TAG for ',
+                TAG_ENV2_ACK: 'TAG for ',
+                }
 
     MESG_VALUE_LAMP_ALL_ON = BYTE_ALL_ON + '\xFF' * 2 + BYTE_RESERVED
     MESG_LAMP_ALL_ON = TAG_LAMP_CTRL + MESG_VALUE_LAMP_ALL_ON
@@ -201,10 +218,13 @@ class Protocol(Process):
             status data: lamp_ctrl_status,  lamp_adj1_status, lamp_adj2_status
             electric data: voltage, current, power, energy, power_factor, co2, board_temperature, freq
             environment data: pm2_5, pm10, temperature, humidity
+            communication stats: comm_okay = +1 once communication succeeds;
+                                comm_fail = +1 once communication fails;
+                                comm_quality = +1 once communication fails and reset to 0 once communication succeeds;
         '''
         data = dict(lamp_ctrl=0, lamp_adj1=0, lamp_adj2=0, lamp_ctrl_status=0,  lamp_adj1_status=0, lamp_adj2_status=0,
                     voltage=0.0, current=0.0, power=0.0, energy=0.0, power_factor=0.0, co2=0.0, board_temperature=0.0,
-                    freq=0.0, pm2_5=0.0, pm10=0.0, temperature=0.0, humidity=0.0)
+                    freq=0.0, pm2_5=0.0, pm10=0.0, temperature=0.0, humidity=0.0, comm_okay=0, comm_fail=0, comm_quality=0)
         for sta in self.stations.iterkeys():
             self.stations[sta].update(data)
         pass
@@ -374,14 +394,14 @@ class Protocol(Process):
             if self._role == 'RC':
                 # for RC, get cmds from input pipe and execute
                 # cmd is an instance of ZnldCmd class
-                cmd = self._p_cmd.recv()
+                cmd = self._poll_cmd()
                 if cmd.cmd == ZnldCmd.CMD_LAMPCTRL:
                     if cmd.dest_id == None:
                         dest_id = self._get_id_from(cmd.dest_addr)
                         if dest_id == None:
                             logger.error('id look up failed by addr=%d' % cmd.dest_addr)
                             cmd.cmd_result = False
-                            self._p_cmd.send(cmd)
+                            self._ack_cmd(cmd)
                             continue
                         else:
                             cmd.dest_id = binascii.a2b_hex(dest_id)
@@ -391,7 +411,7 @@ class Protocol(Process):
                             if cmd.dest_id != LampControl.BROADCAST_ID:
                                 logger.error('id look up failed by id=%s' % dest_id)
                                 cmd.cmd_result = False
-                                self._p_cmd.send(cmd)
+                                self._ack_cmd(cmd)
                                 continue
                      
                     if cmd.dest_id == LampControl.BROADCAST_ID:
@@ -404,52 +424,41 @@ class Protocol(Process):
                                 self.stations[id]['lamp_adj1'] = cmd.message[2]
                                 self.stations[id]['lamp_adj2'] = cmd.message[3]
                             cmd.cmd_result = True
-                            self._p_cmd.send(cmd)
+                            self._ack_cmd(cmd)
                         else:
                             logger.error('illegal broadcast cmd: %s' % binascii.b2a_hex(cmd.message))
                             cmd.cmd_result = False
-                            self._p_cmd.send(cmd)
+                            self._ack_cmd(cmd)
                     else:
                         # unicast below, a response is expected
                         if cmd.message[0] == LampControl.TAG_POLL:
                             logger.info('RC send POLL to STA (%s)' % dest_id)
-                            count = 0
-                            while count < self._retry:
-                                logger.info('RC send message %s times' % str(count + 1))
-                                self._send_message(cmd.dest_id, cmd.message)
-                                try:
-                                    (result, data) = self._RC_wait_for_resp(src_id=dest_id,
-                                                                            tag=LampControl.TAG_POLL_ACK,
-                                                                            timeout=self.timeout)
-                                    if result:
-                                        if data[1] == expected:
-                                            return True
-                                        else:
-                                            raise RxUnexpectedTag
-                                    else:
-                                        count += 1
-                                except RxTimeOut:
-                                    count += 1
-                                except RxNack:
-                                    raise
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_POLL_ACK):
+                                cmd.cmd_result = True
                             else:
-                                raise RxTimeOut
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
                         elif cmd.message[0] == LampControl.TAG_LAMP_CTRL:
-                            logger.info('RC send lamp ctrl (%s) to STA (%s)' %
-                                        (binascii.b2a_hex(cmd.message), dest_id))
+                            logger.info('RC send lamp ctrl (%s) to STA (%s)' % (binascii.b2a_hex(cmd.message), dest_id))
                             self.stations[id]['lamp_ctrl'] = cmd.message[1]
                             self.stations[id]['lamp_adj1'] = cmd.message[2]
                             self.stations[id]['lamp_adj2'] = cmd.message[3]
-                            self._send_message(cmd.dest_id, cmd.message)
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_POLL_ACK):
+                                cmd.cmd_result = True
+                            else:
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
 
                 elif cmd.cmd == None:
                     # NULL CMD, return True/Success directly
                     cmd.cmd_result = True
-                    self._p_cmd.send(cmd)
+                    self._ack_cmd(cmd)
                 else:
                     # unknown CMD, return False/Failure
                     cmd.cmd_result = False
-                    self._p_cmd.send(cmd)
+                    self._ack_cmd(cmd)
             else:
                 # for STA/RELAY, call _STA_frame_process
                 frame = self._Rx_queue.get()
@@ -457,6 +466,21 @@ class Protocol(Process):
                 self._STA_frame_process(frame)
 
         logger.info('Thread transmitting ends')
+
+    def _poll_cmd(self):
+        '''
+        poll various cmd queues in round-robin manner for processing
+        :return: cmd 
+        '''
+        return self._p_cmd.recv()
+
+    def _ack_cmd(self, cmd):
+        '''
+        response with updated cmd into various cmd queues
+        :param cmd: 
+        :return: None
+        '''
+        self._p_cmd.send(cmd)
 
     def _get_id_from(self, addr):
         '''
@@ -513,13 +537,14 @@ class Protocol(Process):
                             break
         return (result, rx_frame[15:20])
 
-    def RC_unicast_poll(self, dest_id, expected):
+    def RC_unicast(self, dest_id, message, expected):
         '''
-        unicast only, expect TAG_POLL_ACK
-        for test, 1st byte of POLL_ACK has self._STA_lamp_status
+        RC unicast only, expect TAG specified, will update stations dictionary if successful
         :param dest_id:
-        :param expected: expected value in POLL_ACK
+        :param message: 
+        :param expected: expected TAG value
         :return: True on success, False on failure
+        :exception RxNack, RxTimeOut
         '''
         count = 0
         mesg = LampControl.MESG_POLL
