@@ -1,6 +1,6 @@
 {
   "gui": "YES",
-  "testing": "True",
+  "testing": "False",
   "role": "RC",
   "id": "000000000001",
   "name": "RC_1",

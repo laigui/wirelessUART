@@ -3,7 +3,7 @@
 
 __author__ = 'Wei; Mike'
 
-from protocol.znldProtocol import Protocol
+from protocol.znldProtocol import Protocol, LampControl, ZnldCmd
 from gui.znldGUI import *
 from libs.myException import *
 
@@ -21,30 +21,48 @@ class ZNLDApp(Application):
                            relay_random_backoff = relay_random_backoff, stations=stations,
                            daemon=True, name='Routine RC receiving')
         self.rc.start()
+        self.p_cmd = self.rc.get_cmd_pipe()
         self.stations = self.rc.get_stas_dict() # get stations dict proxy reference in multiprocess env
         Application.__init__(self, self.stations)
 
     def __del__(self):
         logger.debug('Waiting for routine end')
+        while self.p_cmd.poll():
+            self.p_cmd.recv()
+        self.rc.stop()
         self.rc.join()
         logger.debug('End')
 
 
     def on_all_lamps_on_button_click(self):
         '''灯具全部开'''
-        logger.info('on_all_lamps_on_button_click')
-        mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_ON
-        logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
-        self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
-        pass
+        logger.debug('on_all_lamps_on_button_click')
+        cmd = ZnldCmd()
+        cmd.cmd_id = 1
+        cmd.dest_id = LampControl.BROADCAST_ID
+        cmd.dest_addr = 0
+        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+        cmd.message = LampControl.MESG_LAMP_ALL_ON
+        self.p_cmd.send(cmd)
+        if self.p_cmd.recv().cmd_result:
+            logger.debug('Successfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+        else:
+            logger.error('Unsuccessfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
 
     def on_all_lamps_off_button_click(self):
         '''灯具全部关'''
-        logger.info('on_all_lamps_off_button_click')
-        mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_OFF
-        logger.info('broadcast mesg = %s' % binascii.b2a_hex(mesg))
-        self.rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
-        pass
+        logger.debug('on_all_lamps_off_button_click')
+        cmd = ZnldCmd()
+        cmd.cmd_id = 1
+        cmd.dest_id = LampControl.BROADCAST_ID
+        cmd.dest_addr = 0
+        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+        cmd.message = LampControl.MESG_LAMP_ALL_OFF
+        self.p_cmd.send(cmd)
+        if self.p_cmd.recv().cmd_result:
+            logger.debug('Successfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+        else:
+            logger.error('Unsuccessfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
 
     def on_lamp_status_query_button_click(self, lamp_num):
         '''灯具状态查询'''
@@ -61,18 +79,6 @@ class ZNLDApp(Application):
         logger.debug("Lamp #" + str(lamp_num) + "  " + str(value) + " slider set on-going")
         pass
 
-    def on_lamp_status_set_checkbutton_click(self, lamp_num, status):
-        '''维修模式灯具状态设计'''
-        logger.debug("Lamp #" + str(lamp_num) + "checkbotton status = " + str(status))
-        if status == 1:
-            mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_ON
-        else:
-            mesg = Protocol.LampControl.MESG_VALUE_LAMP_ALL_OFF
-        station_id = '\x00' * 5 + chr(lamp_num + 2)
-        logger.info('unicast to STA (%s) mesg = %s' % (binascii.b2a_hex(station_id), binascii.b2a_hex(mesg)))
-        self.rc.RC_lamp_ctrl(station_id, mesg)
-        pass
-
     def on_lamp_confirm_button_click(self):
         """维修模式灯具确认"""
         node_addr = int(self.frames[PageThree].spinboxes[2].get()) + \
@@ -82,22 +88,31 @@ class ZNLDApp(Application):
         lamp1_val = self.frames[PageThree].var1.get()
         lamp2_val = self.frames[PageThree].var2.get()
         if lamp1_val > 0 and lamp2_val > 0:
-            lamp_on = Protocol.LampControl.BYTE_ALL_ON
+            lamp_on = LampControl.BYTE_ALL_ON
         elif lamp1_val > 0 and lamp2_val == 0:
-            lamp_on = Protocol.LampControl.BYTE_LEFT_ON
+            lamp_on = LampControl.BYTE_LEFT_ON
         elif lamp1_val == 0 and lamp2_val > 0:
-            lamp_on = Protocol.LampControl.BYTE_RIGHT_ON
+            lamp_on = LampControl.BYTE_RIGHT_ON
         else:
-            lamp_on = Protocol.LampControl.BYTE_ALL_OFF
-        mesg = lamp_on + chr(lamp1_val) + chr(lamp2_val) + Protocol.LampControl.BYTE_RESERVED
+            lamp_on = LampControl.BYTE_ALL_OFF
+
+        cmd = ZnldCmd()
+        cmd.cmd_id = 1
+        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+        cmd.dest_addr = node_addr
+        cmd.message = LampControl.TAG_LAMP_CTRL + chr(lamp1_val) + chr(lamp2_val) + LampControl.BYTE_RESERVED
 
         for id in self.stations.keys():
             if self.stations[id]['addr'] == node_addr:
-                logger.info('unicast to STA (%s) mesg = %s' % (id, binascii.b2a_hex(mesg)))
-                self.rc.RC_lamp_ctrl(binascii.a2b_hex(id), mesg)
+                logger.debug('unicast to STA (%s) mesg: %s' % (id, binascii.b2a_hex(cmd.message)))
+                #cmd.dest_id = binascii.a2b_hex(id)
                 break
-        pass
 
+        self.p_cmd.send(cmd)
+        if self.p_cmd.recv().cmd_result:
+            logger.debug('got correct response')
+        else:
+            logger.error('got no or incorrect response')
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.
@@ -144,42 +159,47 @@ if __name__ == "__main__":
             rc = Protocol(id=id, role=role, hop=hop, baudrate=e32_baudrate,
                           testing=testing, timeout=timeout, e32_delay=e32_delay, relay_delay=relay_delay,
                           relay_random_backoff=relay_random_backoff, stations=stations,
-                          daemon = True, name = 'Routine RC receiving')
+                          daemon=True, name='Routine RC receiving')
+            p_cmd = rc.get_cmd_pipe()
+            stas_dict = rc.get_stas_dict()
+            cmd = ZnldCmd()
+            #cmd.dest_id = LampControl.BROADCAST_ID
+            cmd.dest_addr = 0
+            cmd.cmd = ZnldCmd.CMD_LAMPCTRL
             results = {}
             for id in stations.keys():
                 name = stations[id]['name']
-                results[name] = {'OK': 0, 'ERR_TAG': 0, 'ERR_TO': 0, 'ERR_NACK': 0}
+                results[name] = {'OK': 0, 'ERR_BC': 0, 'ERR_UC': 0}
             try:
                 rc.start()
                 loop = 0
                 led_ctrl = 0x3
                 while loop < 10000:
-                    mesg = chr(led_ctrl) + '\xFF\xFF\x00'
+                    mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
+                    cmd.message = mesg
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
-                    #rc.RC_lamp_ctrl('\x00\x00\x00\x00\x00\x02', mesg)
-                    rc.RC_lamp_ctrl(Protocol.LampControl.BROADCAST_ID, mesg)
+                    p_cmd.send(cmd)
+                    p_cmd.recv()
                     # TODO: ? need a delay to avoid broadcast storm
                     #sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
                     logger.info('poll led status from each STA:')
                     for id in stations.keys():
                         name = stations[id]['name']
-                        try:
-                            rc.RC_unicast_poll(binascii.a2b_hex(id), chr(led_ctrl))
-                        except RxUnexpectedTag:
-                            logger.error('RC got unexpected TAG_POLL_ACK from STA (%s)' % id)
-                            results[name]['ERR_TAG'] += 1
-                        except RxTimeOut:
-                            logger.debug('RC didn\'t get expected response from STA (%s)' % id)
-                            results[name]['ERR_TO'] += 1
-                        except RxNack:
-                            logger.error('NACK is received from STA (%s)' % id)
-                            results[name]['ERR_NACK'] += 1
+                        cmd.dest_id = binascii.a2b_hex(id)
+                        cmd.message = LampControl.MESG_POLL
+                        p_cmd.send(cmd)
+                        if p_cmd.recv().cmd_result:
+                            if stas_dict[id]['lamp_ctrl'] == stas_dict[id]['lamp_ctrl_status']:
+                                logger.info('%s (%s) response successfully' % (name, id))
+                                results[name]['OK'] += 1
+                            else:
+                                logger.error('not get correct lamp status from %s (%s)' % (name, id))
+                                results[name]['ERR_BC'] += 1
                         else:
-                            logger.info('RC got expected TAG_POLL_ACK from STA (%s)' % id)
-                            logger.info('%s (%s) response successfully' % (name, id))
-                            results[name]['OK'] += 1
+                            logger.error('not get POLL_ACK from %s (%s)' % (name, id))
+                            results[name]['ERR_UC'] += 1
                         # need a delay to avoid broadcast storm
-                        sleep(rc.e32_delay + rc.hop * (rc.relay_delay + rc.relay_random_backoff))
+                        #sleep(rc.e32_delay + rc.hop * (rc.relay_delay + rc.relay_random_backoff))
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
@@ -200,7 +220,6 @@ if __name__ == "__main__":
             logger.debug('running in GUI mode')
             # 实例化Application
             app = ZNLDApp(stations)
-            #app.clocking()
             # 主消息循环:
             app.mainloop()
 

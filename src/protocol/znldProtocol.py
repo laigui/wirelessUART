@@ -142,7 +142,7 @@ class Protocol(Process):
     Using shared stations dictionary to update lamp status in GUI
     '''
     def __init__(self, id, stations, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
-                 e32_delay=5, relay_delay=1, relay_random_backoff=3, **kwargs):
+                 e32_delay=2, relay_delay=1, relay_random_backoff=3, **kwargs):
         super(Protocol, self).__init__()
         self._stop = False
         self._retry = retry
@@ -189,7 +189,8 @@ class Protocol(Process):
         #     logger.info('E32 Configuration: %s', self.ser.get_config(inHex=False))
         #     self.ser.set_E32_mode(0)
 
-        self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + timeout
+        #self.timeout = (3 + 3 * hop) * 2 * self._max_frame_len * 10 / baudrate + timeout
+        self.timeout = e32_delay + hop * (relay_delay + relay_random_backoff)
         self.e32_delay = e32_delay # E32 initial communication delay, unknown to us so far. let it be 5 so far
         self.relay_delay = relay_delay # delay x seconds to avoid conflicting with STA response
         self.relay_random_backoff = relay_random_backoff # max. random backoff delay to avoid conflicting between RELAYs
@@ -203,6 +204,8 @@ class Protocol(Process):
         self._t_rx = ThreadRx(role=self._role, queue=self._Rx_queue, id=self._id) # Thread for rx frames processing
 
     def __del__(self):
+        self._t_rx.stop()
+        self._t_rx.join()
         if ISRPI:
             GPIO.cleanup()
 
@@ -270,7 +273,7 @@ class Protocol(Process):
                 self.ser.transmit(tx_str)
             except:
                 logger.error('Tx error!')
-            if index == 0 and tx_str_reset_sn:
+            if index == 0 and (tx_str_reset_sn or self._frame_no == 0):
                 logger.debug('broadcast sn=0 update frame')
                 # need a delay to avoid broadcast storm
                 sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
@@ -343,13 +346,16 @@ class Protocol(Process):
                         logger.debug('got TAG_LAMP_CTRL')
                         self._STA_do_lamp_ctrl(value)
                         if dest_id != LampControl.BROADCAST_ID:
+                            #TODO: update per protocol
+                            #logger.debug('sent POLL ACK')
+                            #MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
+                            #self._send_message(src_id, MESG_POLL_ACK)
                             logger.debug('sent ACK')
-                            MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
-                            self._send_message(src_id, MESG_POLL_ACK)
+                            self._send_message(src_id, LampControl.MESG_ACK)
                         else:
                             logger.debug('no ACK to broadcast')
                     elif tag == LampControl.TAG_POLL:
-                        logger.debug('got TAG_POLL')
+                        logger.debug('got POLL ACK')
                         MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
                         self._send_message(src_id, MESG_POLL_ACK)
                 else:
@@ -439,13 +445,46 @@ class Protocol(Process):
                             else:
                                 cmd.cmd_result = False
                             self._ack_cmd(cmd)
+                        elif cmd.message[0] == LampControl.TAG_POWER1_POLL:
+                            logger.info('RC send POWER1 POLL to STA (%s)' % dest_id)
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_POWER1_ACK):
+                                cmd.cmd_result = True
+                            else:
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
+                        elif cmd.message[0] == LampControl.TAG_POWER2_POLL:
+                            logger.info('RC send POWER2 POLL to STA (%s)' % dest_id)
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_POWER2_ACK):
+                                cmd.cmd_result = True
+                            else:
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
+                        elif cmd.message[0] == LampControl.TAG_ENV1_POLL:
+                            logger.info('RC send ENV1 POLL to STA (%s)' % dest_id)
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_ENV1_ACK):
+                                cmd.cmd_result = True
+                            else:
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
+                        elif cmd.message[0] == LampControl.TAG_ENV2_POLL:
+                            logger.info('RC send ENV2 POLL to STA (%s)' % dest_id)
+                            if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
+                                               expected=LampControl.TAG_ENV2_ACK):
+                                cmd.cmd_result = True
+                            else:
+                                cmd.cmd_result = False
+                            self._ack_cmd(cmd)
                         elif cmd.message[0] == LampControl.TAG_LAMP_CTRL:
                             logger.info('RC send lamp ctrl (%s) to STA (%s)' % (binascii.b2a_hex(cmd.message), dest_id))
                             self.stations[id]['lamp_ctrl'] = cmd.message[1]
                             self.stations[id]['lamp_adj1'] = cmd.message[2]
                             self.stations[id]['lamp_adj2'] = cmd.message[3]
+                            # TODO: update per protocol
                             if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
-                                               expected=LampControl.TAG_POLL_ACK):
+                                               expected=LampControl.TAG_ACK):
                                 cmd.cmd_result = True
                             else:
                                 cmd.cmd_result = False
@@ -512,30 +551,31 @@ class Protocol(Process):
         pass
 
     def _RC_wait_for_resp(self, src_id, tag, timeout):
-        #TODO: need improvement on timeout
-        result = False
-        while result == False:
-            try:
-                rx_frame = self._Rx_queue.get(True, timeout)
-                self._Rx_queue.task_done()
-            except Queue.Empty:
-                raise RxTimeOut
-            else:
-                rx_src_id = rx_frame[2:8]
-                rx_dest_id = rx_frame[8:14]
-                rx_sn = ord(rx_frame[14])
-                rx_tag = rx_frame[15]
-                if rx_src_id == src_id and rx_dest_id == self._id:
-                    if rx_sn > self._frame_no:
-                        self._frame_no = rx_sn
-                        if rx_tag == LampControl.TAG_NACK:
-                            raise RxNack
-                        elif rx_tag == tag:
-                            result = True
-                        else:
-                            logger.debug('unexpected frame received with TAG %s', binascii.b2a_hex(rx_tag))
-                            break
-        return (result, rx_frame[15:20])
+        try:
+            rx_frame = self._Rx_queue.get(True, timeout)
+            self._Rx_queue.task_done()
+        except Queue.Empty:
+            raise RxTimeOut
+        else:
+            rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
+            rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
+            rx_sn = ord(rx_frame[LampControl.SN])
+            rx_tag = rx_frame[LampControl.TAG]
+            rx_value = rx_frame[LampControl.VALUE_S:LampControl.CRC_S]
+            message = rx_tag + rx_value
+            if rx_src_id == src_id and rx_dest_id == self._id:
+                if rx_sn > self._frame_no:
+                    self._frame_no = rx_sn
+                    if rx_tag == LampControl.TAG_NACK:
+                        logger.error('NACK is received')
+                        raise RxNack
+                    elif rx_tag == tag:
+                        logger.debug('expected message received: %s', binascii.b2a_hex(message))
+                        return message
+                    else:
+                        logger.error('unexpected message received: %s', binascii.b2a_hex(message))
+                        raise RxUnexpectedTag
+
 
     def RC_unicast(self, dest_id, message, expected):
         '''
@@ -546,28 +586,44 @@ class Protocol(Process):
         :return: True on success, False on failure
         :exception RxNack, RxTimeOut
         '''
+        result = False
         count = 0
-        mesg = LampControl.MESG_POLL
-        logger.info('RC send POLL to STA (%s)' % binascii.b2a_hex(dest_id))
+        id = binascii.b2a_hex(dest_id)
         while count < self._retry:
             logger.info('RC send message %s times' % str(count + 1))
-            self._send_message(dest_id, mesg)
+            self._send_message(dest_id, message)
             try:
-                (result, data) = self._RC_wait_for_resp(src_id=dest_id, tag=LampControl.TAG_POLL_ACK, timeout=self.timeout)
-                if result:
-                    if data[1] == expected:
-                        return True
+                received_mesg = self._RC_wait_for_resp(src_id=dest_id, tag=expected, timeout=self.timeout)
+                if received_mesg:
+                    if expected == LampControl.TAG_POLL_ACK:
+                        self.stations[id]['lamp_ctrl_status'] = received_mesg[1]
+                        self.stations[id]['lamp_adj1_status'] = received_mesg[2]
+                        self.stations[id]['lamp_adj2_status'] = received_mesg[3]
+                    elif expected == LampControl.TAG_POWER1_ACK:
+                        # TODO: need update for data storage
+                        pass
+                    elif expected == LampControl.TAG_POWER2_ACK:
+                        pass
+                    elif expected == LampControl.TAG_ENV1_ACK:
+                        pass
+                    elif expected == LampControl.TAG_ENV2_ACK:
+                        pass
                     else:
-                        raise RxUnexpectedTag
+                        pass
+                    self.stations[id]['comm_okay'] += 1
+                    self.stations[id]['comm_quality'] = 0
+                    result = True
+                    break
                 else:
+                    # never come here
                     count += 1
-            except RxTimeOut:
-                count += 1
-            except RxNack:
-                raise
-        else:
-            raise RxTimeOut
-        pass
+                    self.stations[id]['comm_fail'] += 1
+                    self.stations[id]['comm_quality'] += 1
+            except (RxUnexpectedTag, RxNack, RxTimeOut):
+                count +=1
+                self.stations[id]['comm_fail'] += 1
+                self.stations[id]['comm_quality'] += 1
+        return result
 
     def RC_lamp_ctrl(self, dest_id, value):
         '''
