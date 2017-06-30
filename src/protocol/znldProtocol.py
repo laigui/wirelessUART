@@ -6,7 +6,7 @@ __author__ = 'Wei'
 import binascii, ctypes, struct, Queue
 import threading
 import random
-from time import sleep
+from time import sleep, time
 from multiprocessing import Process, Manager, Pipe
 from multiprocessing.managers import SyncManager
 
@@ -24,7 +24,7 @@ else:
 from libs.E32Serial import E32
 from libs.myException import *
 
-
+cmd_sn = 0
 class ZnldCmd(object):
     '''
     ZNLD command structure for inputs locally or remotely
@@ -33,7 +33,9 @@ class ZnldCmd(object):
     CMD_OTHER = 2
 
     def __init__(self):
-        self.cmd_id = 0 # distinguish in cmds sequence
+        global cmd_sn
+        self.cmd_id = cmd_sn # distinguish in cmds sequence
+        cmd_sn += 1
         self.cmd_result = False # return True when cmd execution successful
         self.cmd = None # lamp control cmd or other cmd TBD
         self.dest_addr = 0  # destination logic addr, need to look up dest_id if it is None
@@ -397,10 +399,10 @@ class Protocol(Process):
             self._send_message(LampControl.BROADCAST_ID, LampControl.MESG_NULL)
             # need a delay to avoid broadcast storm
             sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
-            self._frame_no = -2
-            self._send_message(LampControl.BROADCAST_ID, LampControl.MESG_NULL)
-            # need a delay to avoid broadcast storm
-            sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
+            # self._frame_no = -2
+            # self._send_message(LampControl.BROADCAST_ID, LampControl.MESG_NULL)
+            # # need a delay to avoid broadcast storm
+            # sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
 
         while not self._stop:
             if self._role == 'RC':
@@ -518,7 +520,15 @@ class Protocol(Process):
         poll various cmd queues in round-robin manner for processing
         :return: cmd 
         '''
-        return self._p_cmd.recv()
+        from time import time
+        time = time()
+        cmd = self._p_cmd.recv()
+        if cmd.cmd_id == 0:
+            self.last_cmd_time = time
+        else:
+            while (time() - self.last_cmd_time) < self.timeout:
+                sleep(1)
+        return cmd
 
     def _ack_cmd(self, cmd):
         '''

@@ -39,31 +39,29 @@ class ZNLDApp(Application):
         '''灯具全部开'''
         logger.debug('on_all_lamps_on_button_click')
         cmd = ZnldCmd()
-        cmd.cmd_id = 1
         cmd.dest_id = LampControl.BROADCAST_ID
         cmd.dest_addr = 0
         cmd.cmd = ZnldCmd.CMD_LAMPCTRL
         cmd.message = LampControl.MESG_LAMP_ALL_ON
         self.p_cmd.send(cmd)
         if self.p_cmd.recv().cmd_result:
-            logger.debug('Successfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+            logger.debug('Successfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
         else:
-            logger.error('Unsuccessfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+            logger.error('Unsuccessfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
 
     def on_all_lamps_off_button_click(self):
         '''灯具全部关'''
         logger.debug('on_all_lamps_off_button_click')
         cmd = ZnldCmd()
-        cmd.cmd_id = 1
         cmd.dest_id = LampControl.BROADCAST_ID
         cmd.dest_addr = 0
         cmd.cmd = ZnldCmd.CMD_LAMPCTRL
         cmd.message = LampControl.MESG_LAMP_ALL_OFF
         self.p_cmd.send(cmd)
         if self.p_cmd.recv().cmd_result:
-            logger.debug('Successfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+            logger.debug('Successfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
         else:
-            logger.error('Unsuccessfully broadcast mesg: %s' % binascii.b2a_hex(cmd.message))
+            logger.error('Unsuccessfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
 
     def on_lamp_status_query_button_click(self, lamp_num):
         '''灯具状态查询'''
@@ -98,7 +96,6 @@ class ZNLDApp(Application):
             lamp_on = LampControl.BYTE_ALL_OFF
 
         cmd = ZnldCmd()
-        cmd.cmd_id = 1
         cmd.cmd = ZnldCmd.CMD_LAMPCTRL
         cmd.dest_addr = node_addr
         cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(lamp1_val) + chr(lamp2_val) + LampControl.BYTE_RESERVED
