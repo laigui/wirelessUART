@@ -324,7 +324,7 @@ class Protocol(Process):
                     sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
                 else:
                     # need another delay to avoid unicast & response frames
-                    sleep(2 * self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
+                    sleep(2 * self.hop * (self.relay_random_backoff + self.relay_delay) + 2 * self.e32_delay)
 
     def _forward_frame(self, frame):
         if self._role == 'RELAY':

@@ -4,9 +4,9 @@
   "role": "RC",
   "id": "000000000001",
   "name": "RC_1",
-  "hop": 1,
+  "hop": 0,
   "timeout": 5,
-  "e32_delay": 2,
+  "e32_delay": 1,
   "relay_delay": 1,
   "relay_random_backoff": 3,
   "e32": {
