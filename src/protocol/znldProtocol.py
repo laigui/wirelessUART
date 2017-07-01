@@ -540,10 +540,10 @@ class Protocol(Process):
         look up node id from stations dictionary based on the logic addr
         if no match, return None.
         :param addr: the logic address
-        :return: the node id
+        :return: the node id in ASIC
         '''
         if addr == 0:
-            return LampControl.BROADCAST_ID
+            return binascii.b2a_hex(LampControl.BROADCAST_ID)
         for id in self.stations.iterkeys():
             if self.stations[id]['addr'] == addr:
                 return id
