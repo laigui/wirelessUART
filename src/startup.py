@@ -135,7 +135,7 @@ if __name__ == "__main__":
         role = node_config['role'].strip().upper()
         id = binascii.a2b_hex(node_config['id'].strip())
     except KeyError:
-        logger.error('key errors (role, id) in configuration')
+        logger.exception('key errors (role, id) in configuration')
         exit(-1)
 
     if role == 'RC':
@@ -208,18 +208,21 @@ if __name__ == "__main__":
                 logger.debug('Stopping routine by Ctrl-C')
                 rc.stop()
             except:
-                import traceback
-                traceback.print_exc()
+                logger.exception('got exception in main')
             finally:
                 logger.debug('Waiting for routine end')
                 rc.join()
                 logger.debug('End')
         else:
             logger.debug('running in GUI mode')
-            # 实例化Application
-            app = ZNLDApp(stations)
-            # 主消息循环:
-            app.mainloop()
+            try:
+                # 实例化Application
+                app = ZNLDApp(stations)
+                # 主消息循环:
+                app.mainloop()
+            except:
+                logger.exception('got exception in main')
+                app.rc.terminate()
 
     elif role == 'RELAY' or role == 'STA':
         node = Protocol(id=id, role=role, stations=None, daemon=True, name='Routine STA receiving')
@@ -231,8 +234,7 @@ if __name__ == "__main__":
             logger.debug('Stopping routine by Ctrl-C')
             node.stop()
         except:
-            import traceback
-            traceback.print_exc()
+            logger.exception('got exception in main')
         finally:
             logger.debug('Waiting for routine end')
             node.join()
