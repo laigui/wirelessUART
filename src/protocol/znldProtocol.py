@@ -290,6 +290,7 @@ class Protocol(Process):
                 self._frame_no = 0
                 tx_str_reset_sn = LampControl.FRAME_HEADER + self._id + LampControl.BROADCAST_ID\
                          + chr(self._frame_no) + LampControl.MESG_NULL
+                logger.debug('broadcast sn=0 update frame')
                 self._frame_no = 1
             else:
                 # no need to send another broadcast frame if it is already broadcast.
@@ -317,10 +318,13 @@ class Protocol(Process):
                 self.ser.transmit(tx_str)
             except:
                 logger.error('Tx error!')
-            if index == 0 and (tx_str_reset_sn or self._frame_no == 0):
-                logger.debug('broadcast sn=0 update frame')
-                # need a delay to avoid broadcast storm
-                sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
+            if self._role == 'RC':
+                if (index == 0 and tx_str_reset_sn) or dest_id == LampControl.BROADCAST_ID:
+                    # need a delay to avoid broadcast storm
+                    sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
+                else:
+                    # need another delay to avoid unicast & response frames
+                    sleep(2 * self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
 
     def _forward_frame(self, frame):
         if self._role == 'RELAY':
@@ -520,14 +524,7 @@ class Protocol(Process):
         poll various cmd queues in round-robin manner for processing
         :return: cmd 
         '''
-        from time import time
-        time = time()
         cmd = self._p_cmd.recv()
-        if cmd.cmd_id == 0:
-            self.last_cmd_time = time
-        else:
-            while (time() - self.last_cmd_time) < self.timeout:
-                sleep(1)
         return cmd
 
     def _ack_cmd(self, cmd):
