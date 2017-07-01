@@ -207,8 +207,8 @@ if __name__ == "__main__":
             except KeyboardInterrupt:
                 logger.debug('Stopping routine by Ctrl-C')
                 rc.stop()
-            except:
-                logger.exception('got exception in main')
+            except Exception as ex:
+                logger.exception(ex)
             finally:
                 logger.debug('Waiting for routine end')
                 rc.join()
@@ -220,9 +220,10 @@ if __name__ == "__main__":
                 app = ZNLDApp(stations)
                 # 主消息循环:
                 app.mainloop()
-            except:
-                logger.exception('got exception in main')
+            except Exception as ex:
+                logger.exception(ex)
                 app.rc.terminate()
+                raise
 
     elif role == 'RELAY' or role == 'STA':
         node = Protocol(id=id, role=role, stations=None, daemon=True, name='Routine STA receiving')
@@ -233,8 +234,8 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             logger.debug('Stopping routine by Ctrl-C')
             node.stop()
-        except:
-            logger.exception('got exception in main')
+        except Exception as ex:
+            logger.exception(ex)
         finally:
             logger.debug('Waiting for routine end')
             node.join()
