@@ -149,14 +149,16 @@ class ThreadRx(threading.Thread):
             rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
             if not got_header:
                 index = rx_str.find(LampControl.FRAME_HEADER)
+                logger.debug('0> header_idx = %d', index)
                 if index == -1:
                     rx_str = ''
                 else:
                     got_header = True
                     rx_str = rx_str[index:]
                     rx_len = index
+                    logger.debug('1> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
             else:
-                logger.debug('A frame is received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
+                logger.debug('2> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
                 rx_crc = rx_str[-2 :]
                 str_payload = rx_str[0 : self._rx_frame_len-2]
                 crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
