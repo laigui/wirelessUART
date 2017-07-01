@@ -616,6 +616,11 @@ class Protocol(Process):
             self._send_message(dest_id, message)
             try:
                 received_mesg = self._RC_wait_for_resp(src_id=dest_id, tag=expected, timeout=self.timeout)
+            except (RxUnexpectedTag, RxNack, RxTimeOut):
+                count += 1
+                self.stations[id]['comm_fail'] += 1
+                self.stations[id]['comm_quality'] += 1
+            else:
                 if received_mesg:
                     if expected == LampControl.TAG_POLL_ACK:
                         self.stations[id]['lamp_ctrl_status'] = received_mesg[1]
@@ -641,10 +646,7 @@ class Protocol(Process):
                     count += 1
                     self.stations[id]['comm_fail'] += 1
                     self.stations[id]['comm_quality'] += 1
-            except (RxUnexpectedTag, RxNack, RxTimeOut):
-                count +=1
-                self.stations[id]['comm_fail'] += 1
-                self.stations[id]['comm_quality'] += 1
+
         return result
 
     def RC_lamp_ctrl(self, dest_id, value):
