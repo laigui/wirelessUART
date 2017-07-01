@@ -156,6 +156,7 @@ class ThreadRx(threading.Thread):
                     rx_str = rx_str[index:]
                     rx_len = index
             else:
+                logger.debug('A frame is received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
                 rx_crc = rx_str[-2 :]
                 str_payload = rx_str[0 : self._rx_frame_len-2]
                 crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
