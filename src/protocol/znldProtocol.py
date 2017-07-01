@@ -585,6 +585,13 @@ class Protocol(Process):
                         raise RxNack
                     elif rx_tag == tag:
                         logger.debug('expected message received: %s', binascii.b2a_hex(message))
+                        # need to empty the rx queue in case STA sends multiple responses,
+                        # so that RC is confused when the next dest_id is the same
+                        try:
+                            while not self._Rx_queue.empty():
+                                self._Rx_queue.get(block=False)
+                        except Queue.Empty:
+                            pass
                         return message
                     else:
                         logger.error('unexpected message received: %s', binascii.b2a_hex(message))
