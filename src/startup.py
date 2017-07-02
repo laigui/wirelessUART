@@ -179,12 +179,15 @@ if __name__ == "__main__":
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     p_cmd.send(cmd)
                     p_cmd.recv()
-                    # TODO: ? need a delay to avoid broadcast storm
-                    #sleep(rc.hop * (rc.e32_delay + rc.relay_random_backoff))
                     logger.info('poll led status from each STA:')
                     for id in stations.keys():
                         name = stations[id]['name']
                         cmd.dest_id = binascii.a2b_hex(id)
+                        if led_ctrl == 0x0:
+                            led_ctrl = 0x3
+                        else:
+                            led_ctrl = 0x0
+                        mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
                         cmd.message = LampControl.MESG_POLL
                         p_cmd.send(cmd)
                         if p_cmd.recv().cmd_result:
@@ -197,8 +200,6 @@ if __name__ == "__main__":
                         else:
                             logger.error('not get POLL_ACK from %s (%s)' % (name, id))
                             results[name]['ERR_UC'] += 1
-                        # need a delay to avoid broadcast storm
-                        #sleep(rc.e32_delay + rc.hop * (rc.relay_delay + rc.relay_random_backoff))
                     logger.info('***** loop = %s: %s*****' % (repr(loop), results))
                     loop += 1
                     if led_ctrl == 0x0:
