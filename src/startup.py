@@ -175,6 +175,7 @@ if __name__ == "__main__":
                 while loop < 10000:
                     mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
                     cmd.message = mesg
+                    cmd.dest_id = LampControl.BROADCAST_ID
                     logger.info('broadcast led_ctrl = %s' % repr(led_ctrl))
                     p_cmd.send(cmd)
                     p_cmd.recv()
