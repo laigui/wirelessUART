@@ -188,7 +188,7 @@ if __name__ == "__main__":
                         else:
                             led_ctrl = 0x0
                         mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
-                        cmd.message = LampControl.MESG_POLL
+                        cmd.message = mesg
                         p_cmd.send(cmd)
                         if p_cmd.recv().cmd_result:
                             if stas_dict[id]['lamp_ctrl'] == stas_dict[id]['lamp_ctrl_status']:
