@@ -149,14 +149,16 @@ class ThreadRx(threading.Thread):
             rx_str = rx_str + self.ser.receive(n=rx_len)  # keep receiving until getting required bytes
             if not got_header:
                 index = rx_str.find(LampControl.FRAME_HEADER)
-                logger.debug('0> header_idx = %d', index)
                 if index == -1:
                     rx_str = ''
+                    rx_len = self._rx_frame_len
+                    got_header = False
                 else:
                     got_header = True
                     rx_str = rx_str[index:]
                     rx_len = index
-                    logger.debug('1> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
+                    logger.debug('0> received: %s', binascii.b2a_hex(rx_str))
+                    logger.debug('1> more to receive: %d', index)
             else:
                 logger.debug('2> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
                 rx_crc = rx_str[-2 :]
@@ -168,11 +170,11 @@ class ThreadRx(threading.Thread):
                     got_header = False
                     rx_str = rx_str[2 :]
                     rx_len = 2
-                    logger.error('A frame is received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
-                    logger.error('Payload: %s', binascii.b2a_hex(str_payload))
-                    logger.error('RX CRC: %s', binascii.b2a_hex(rx_crc))
-                    logger.error('calculated CRC: %s', binascii.b2a_hex(crc))
-                    logger.error('CRC check failed, remove Header and continue')
+                    logger.debug('Payload: %s', binascii.b2a_hex(str_payload))
+                    logger.debug('RX CRC: %s', binascii.b2a_hex(rx_crc))
+                    logger.debug('calculated CRC: %s', binascii.b2a_hex(crc))
+                    logger.debug('CRC check failed, remove Header and continue')
+                    logger.debug('left frame is (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
         logger.debug('RX: {0}'.format(binascii.b2a_hex(rx_str)))
         return rx_str
 
