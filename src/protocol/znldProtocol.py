@@ -349,12 +349,10 @@ class Protocol(Process):
         sn = ord(rx_frame[LampControl.SN])
         tag = rx_frame[LampControl.TAG]
         value = rx_frame[LampControl.VALUE_S:LampControl.CRC_S]
-        update_frame_no = False
 
         if dest_id == self._id or dest_id == LampControl.BROADCAST_ID:
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
-                update_frame_no = True
                 self._frame_no = sn
                 if LampControl.TAG_DICT.has_key(tag):
                     # need to deal with different protocol TAG here
@@ -381,16 +379,14 @@ class Protocol(Process):
                 logger.debug('duplicated frame received')
 
         # do relay if self._role is 'RELAY'
-        if self._role == 'RELAY' and dest_id != self._id:
-            logger.debug('RELAY: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
-            if update_frame_no: # handle broadcast frame again
+        if self._role == 'RELAY':
+            if dest_id == LampControl.BROADCAST_ID: # handle broadcast frame again
                 # each RELAY need random backoff before TX to avoid E32 RF conflicting
                 sleep(random.sample(range(self.relay_random_backoff + 1), 1)[0])
                 logger.info('RELAY sn = %s' % str(sn))
                 self._forward_frame(rx_frame)
-            else:
+            elif dest_id != self._id:
                 if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
-                    update_frame_no = True
                     self._frame_no = sn
                     # each RELAY need a fixed delay before random backoff TX to avoid E32 RF conflicting with STA response
                     sleep(self.relay_delay)
