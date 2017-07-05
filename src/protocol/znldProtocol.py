@@ -360,16 +360,13 @@ class Protocol(Process):
                         logger.debug('got TAG_LAMP_CTRL')
                         self._STA_do_lamp_ctrl(value)
                         if dest_id != LampControl.BROADCAST_ID:
-                            #TODO: update per protocol
-                            #logger.debug('sent POLL ACK')
-                            #MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
-                            #self._send_message(src_id, MESG_POLL_ACK)
-                            logger.debug('sent ACK')
-                            self._send_message(src_id, LampControl.MESG_ACK)
+                            logger.debug('sent POLL ACK')
+                            MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
+                            self._send_message(src_id, MESG_POLL_ACK)
                         else:
                             logger.debug('no ACK to broadcast')
                     elif tag == LampControl.TAG_POLL:
-                        logger.debug('got POLL ACK')
+                        logger.debug('got POLL')
                         MESG_POLL_ACK = LampControl.TAG_POLL_ACK + self._STA_lamp_status
                         self._send_message(src_id, MESG_POLL_ACK)
                 else:
@@ -496,9 +493,8 @@ class Protocol(Process):
                             self.stations[id]['lamp_ctrl'] = cmd.message[1]
                             self.stations[id]['lamp_adj1'] = cmd.message[2]
                             self.stations[id]['lamp_adj2'] = cmd.message[3]
-                            # TODO: update per protocol
                             if self.RC_unicast(dest_id=cmd.dest_id, message=cmd.message,
-                                               expected=LampControl.TAG_ACK):
+                                               expected=LampControl.TAG_POLL_ACK):
                                 cmd.cmd_result = True
                             else:
                                 cmd.cmd_result = False
