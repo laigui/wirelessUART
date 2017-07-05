@@ -350,10 +350,12 @@ class Protocol(Process):
         tag = rx_frame[LampControl.TAG]
         value = rx_frame[LampControl.VALUE_S:LampControl.CRC_S]
 
+        need_forward = False
         if dest_id == self._id or dest_id == LampControl.BROADCAST_ID:
             logger.debug('frame received: Nsn=%s, Psn=%s' % (str(sn), str(self._frame_no)))
             if sn > self._frame_no or (sn == 0 and sn != self._frame_no):
                 self._frame_no = sn
+                need_forward = True
                 if LampControl.TAG_DICT.has_key(tag):
                     # need to deal with different protocol TAG here
                     if tag == LampControl.TAG_LAMP_CTRL:
@@ -377,7 +379,7 @@ class Protocol(Process):
 
         # do relay if self._role is 'RELAY'
         if self._role == 'RELAY':
-            if dest_id == LampControl.BROADCAST_ID: # handle broadcast frame again
+            if dest_id == LampControl.BROADCAST_ID and need_forward: # handle broadcast frame again
                 # each RELAY need random backoff before TX to avoid E32 RF conflicting
                 sleep(random.sample(range(self.relay_random_backoff + 1), 1)[0])
                 logger.info('RELAY sn = %s' % str(sn))
