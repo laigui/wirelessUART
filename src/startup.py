@@ -117,7 +117,9 @@ def logger_init():
     instead we are using dictConfig.
     '''
     from time import localtime, strftime
-    log_filename = strftime("test-%y%m%d-%H:%M:%S.log", localtime())
+    from os.path import expanduser
+    path = expanduser("~")
+    log_filename = os.path.join(path, 'znld-logs', strftime("test-%y%m%d-%H:%M:%S.log", localtime()))
     with open('logging_config.json', 'r') as logging_config_file:
         logging_config = json.load(logging_config_file)
         logging_config['handlers']['file']['filename'] = log_filename
