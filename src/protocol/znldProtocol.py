@@ -129,6 +129,7 @@ class ThreadRx(threading.Thread):
                     or (self._role == 'RELAY'):
                 # place rx_frame into queue for tx routine process
                 self._frames.put(rx_frame)
+                logger.debug('A rx frame is queued!')
 
         logger.info('Thread receiving ends')
         pass
@@ -157,10 +158,10 @@ class ThreadRx(threading.Thread):
                     got_header = True
                     rx_str = rx_str[index:]
                     rx_len = index
-                    logger.debug('0> received: %s', binascii.b2a_hex(rx_str))
-                    logger.debug('1> more to receive: %d', index)
+                    #logger.debug('0> received: %s', binascii.b2a_hex(rx_str))
+                    #logger.debug('1> more to receive: %d', index)
             else:
-                logger.debug('2> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
+                #logger.debug('2> received (len= %d): %s', len(rx_str), binascii.b2a_hex(rx_str))
                 rx_crc = rx_str[-2 :]
                 str_payload = rx_str[0 : self._rx_frame_len-2]
                 crc = struct.pack('>H', ctypes.c_uint16(binascii.crc_hqx(str_payload, 0xFFFF)).value)  # MSB firstly
@@ -567,8 +568,10 @@ class Protocol(Process):
         try:
             rx_frame = self._Rx_queue.get(True, timeout)
         except Queue.Empty:
+            logger.debug('RX Queue RxTimeOut!')
             raise RxTimeOut
         else:
+            logger.debug('A rx frame is popped!')
             self._Rx_queue.task_done()
             rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
             rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
