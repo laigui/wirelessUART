@@ -328,9 +328,6 @@ class Protocol(Process):
                 if (index == 0 and tx_str_reset_sn) or dest_id == LampControl.BROADCAST_ID:
                     # need a delay to avoid broadcast storm
                     sleep(self.hop * (self.relay_random_backoff + self.relay_delay) + self.e32_delay)
-                else:
-                    # need another delay to avoid unicast & response frames
-                    sleep(2 * self.hop * (self.relay_random_backoff + self.relay_delay) + 2 * self.e32_delay)
 
     def _forward_frame(self, frame):
         if self._role == 'RELAY':
@@ -565,39 +562,52 @@ class Protocol(Process):
         pass
 
     def _RC_wait_for_resp(self, src_id, tag, timeout):
-        try:
-            rx_frame = self._Rx_queue.get(True, timeout)
-        except Queue.Empty:
-            logger.debug('RX Queue RxTimeOut!')
+        '''
+        to avoid network storm, have to wait for time of "timeout" even the expected
+        response is received properly.
+        :param src_id: 
+        :param tag: 
+        :param timeout: 
+        :return: 
+        '''
+        time_s = time()
+        result = 1 # Timeout by default
+        while (time() - time_s < timeout):
+            try:
+                rx_frame = self._Rx_queue.get(False)
+            except Queue.Empty:
+                continue
+            else:
+                logger.debug('A rx frame is popped!')
+                self._Rx_queue.task_done()
+                rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
+                rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
+                rx_sn = ord(rx_frame[LampControl.SN])
+                rx_tag = rx_frame[LampControl.TAG]
+                rx_value = rx_frame[LampControl.VALUE_S:LampControl.CRC_S]
+                message = rx_tag + rx_value
+                if rx_src_id == src_id and rx_dest_id == self._id:
+                    if rx_sn > self._frame_no:
+                        self._frame_no = rx_sn
+                        if rx_tag == LampControl.TAG_NACK:
+                            logger.error('NACK is received')
+                            result = 2
+                        elif rx_tag == tag:
+                            logger.debug('expected message received: %s', binascii.b2a_hex(message))
+                            result = 0
+                            recv_mesg = message
+                        else:
+                            logger.error('unexpected message received: %s', binascii.b2a_hex(message))
+                            result = 3
+        if result == 0:
+            return recv_mesg
+        elif result == 1:
+            logger.error('RX Queue RxTimeOut!')
             raise RxTimeOut
-        else:
-            logger.debug('A rx frame is popped!')
-            self._Rx_queue.task_done()
-            rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
-            rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
-            rx_sn = ord(rx_frame[LampControl.SN])
-            rx_tag = rx_frame[LampControl.TAG]
-            rx_value = rx_frame[LampControl.VALUE_S:LampControl.CRC_S]
-            message = rx_tag + rx_value
-            if rx_src_id == src_id and rx_dest_id == self._id:
-                if rx_sn > self._frame_no:
-                    self._frame_no = rx_sn
-                    if rx_tag == LampControl.TAG_NACK:
-                        logger.error('NACK is received')
-                        raise RxNack
-                    elif rx_tag == tag:
-                        logger.debug('expected message received: %s', binascii.b2a_hex(message))
-                        # need to empty the rx queue in case STA sends multiple responses,
-                        # so that RC is confused when the next dest_id is the same
-                        try:
-                            while not self._Rx_queue.empty():
-                                self._Rx_queue.get(block=False)
-                        except Queue.Empty:
-                            pass
-                        return message
-                    else:
-                        logger.error('unexpected message received: %s', binascii.b2a_hex(message))
-                        raise RxUnexpectedTag
+        elif result == 2:
+            raise RxNack
+        elif result == 3:
+            raise RxUnexpectedTag
 
 
     def RC_unicast(self, dest_id, message, expected):
