@@ -626,7 +626,7 @@ class Protocol(Process):
             logger.info('RC send message %s times' % str(count + 1))
             self._send_message(dest_id, message)
             try:
-                received_mesg = self._RC_wait_for_resp(src_id=dest_id, tag=expected, timeout=self.timeout)
+                received_mesg = self._RC_wait_for_resp(src_id=dest_id, tag=expected, timeout=self.timeout*2)
             except (RxUnexpectedTag, RxNack, RxTimeOut):
                 count += 1
                 self.stations[id]['comm_fail'] += 1
