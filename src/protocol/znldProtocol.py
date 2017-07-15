@@ -222,7 +222,8 @@ class Protocol(Process):
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(self._GPIO_LED, GPIO.OUT)
-            port = '/dev/ttyS0'
+            port = '/dev/ttyAMA0'
+            #port = '/dev/ttyS0'
         else:
             port = '/dev/ttyUSB0'
 
