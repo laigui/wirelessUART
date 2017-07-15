@@ -185,11 +185,12 @@ if __name__ == "__main__":
                     for id in stations.keys():
                         name = stations[id]['name']
                         cmd.dest_id = binascii.a2b_hex(id)
-                        if led_ctrl == 0x0:
-                            led_ctrl = 0x3
-                        else:
-                            led_ctrl = 0x0
-                        mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
+                        # if led_ctrl == 0x0:
+                        #     led_ctrl = 0x3
+                        # else:
+                        #     led_ctrl = 0x0
+                        # mesg = LampControl.TAG_LAMP_CTRL + chr(led_ctrl) + '\xFF\xFF\x00'
+                        mesg = LampControl.MESG_POLL
                         cmd.message = mesg
                         p_cmd.send(cmd)
                         if p_cmd.recv().cmd_result:
