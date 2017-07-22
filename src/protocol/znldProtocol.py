@@ -7,7 +7,7 @@ import binascii, ctypes, struct, Queue
 import threading
 import random
 from time import sleep, time
-from multiprocessing import Process, Manager, Pipe
+from multiprocessing import Process, Manager, Pipe, Value
 from multiprocessing.managers import SyncManager
 
 import logging
@@ -191,6 +191,7 @@ class Protocol(Process):
     def __init__(self, id, stations, role='RC', retry=3, hop=0, baudrate=9600, testing='FALSE', timeout=5,
                  e32_delay=2, relay_delay=1, relay_random_backoff=3, **kwargs):
         super(Protocol, self).__init__()
+
         self._stop = False
         self._retry = retry
         self._role = role # three roles: 'RC', 'STA', 'RELAY'
@@ -205,6 +206,8 @@ class Protocol(Process):
         self.stations = stations # dictionary for station's info storage
         self._STA_lamp_status = '' # for station only
 
+        self.sv_comm_status = Value('b', 0)  # unsigned char, for sharing between processes
+        self.sv_comm_status.value = 0 # 通讯空闲
         if self._role == 'RC':
             # only need to initialize stas_dict for RC
             self._init_stas_dict()
@@ -252,13 +255,14 @@ class Protocol(Process):
         self._t_rx = ThreadRx(role=self._role, queue=self._Rx_queue, id=self._id,
                               frame_len=self._rx_frame_len, serial=self.ser) # Thread for rx frames processing
 
-
-
     def __del__(self):
         self._t_rx.stop()
         self._t_rx.join()
         if ISRPI:
             GPIO.cleanup()
+
+    def get_comm_status(self):
+        return self.sv_comm_status
 
     def get_cmd_pipe(self):
         return self.p_cmd
@@ -523,6 +527,7 @@ class Protocol(Process):
         :return: cmd 
         '''
         cmd = self._p_cmd.recv()
+        self.sv_comm_status.value = 1 #'通讯进行中。。。'
         return cmd
 
     def _ack_cmd(self, cmd):
@@ -531,6 +536,10 @@ class Protocol(Process):
         :param cmd: 
         :return: None
         '''
+        if cmd.cmd_result:
+            self.sv_comm_status.value = 2  #'通讯成功'
+        else:
+            self.sv_comm_status.value = -1 #'通讯失败'
         self._p_cmd.send(cmd)
 
     def _get_id_from(self, addr):

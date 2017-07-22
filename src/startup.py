@@ -23,7 +23,21 @@ class ZNLDApp(Application):
         self.rc.start()
         self.p_cmd = self.rc.get_cmd_pipe()
         self.stations = self.rc.get_stas_dict() # get stations dict proxy reference in multiprocess env
+        self._communication = 0
         Application.__init__(self, self.stations)
+        self._update_comm()
+
+    def _update_comm(self):
+        self._communication = self.rc.get_comm_status().value
+        if (self._communication == 0):
+            self._comm_status[0] = '通讯空闲'
+        elif (self._communication == 1):
+            self._comm_status[0] = '通讯进行中'
+        elif (self._communication == 2):
+            self._comm_status[0] = '通讯成功'
+        else:
+            self._comm_status[0] = '通讯失败'
+        self.after(1000, func=self._update_comm)
 
     def __del__(self):
         logger.debug('Waiting for routine end')
@@ -34,34 +48,38 @@ class ZNLDApp(Application):
         self.rc.join()
         logger.debug('End')
 
+    def _check_cmd_status(self):
+        if self.p_cmd.poll():
+            if self.p_cmd.recv().cmd_result:
+                logger.debug('CMD done SUCCESS!')
+            else:
+                logger.error('CMD done FAIL!')
+        else:
+            self.after(1000, self._check_cmd_status)
 
     def on_all_lamps_on_button_click(self):
         '''灯具全部开'''
-        logger.debug('on_all_lamps_on_button_click')
-        cmd = ZnldCmd()
-        cmd.dest_id = LampControl.BROADCAST_ID
-        cmd.dest_addr = 0
-        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
-        cmd.message = LampControl.MESG_LAMP_ALL_ON
-        self.p_cmd.send(cmd)
-        if self.p_cmd.recv().cmd_result:
-            logger.debug('Successfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
-        else:
-            logger.error('Unsuccessfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
+        if (self.rc.get_comm_status().value != 1): # not in communication
+            logger.debug('on_all_lamps_on_button_click')
+            cmd = ZnldCmd()
+            cmd.dest_id = LampControl.BROADCAST_ID
+            cmd.dest_addr = 0
+            cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+            cmd.message = LampControl.MESG_LAMP_ALL_ON
+            self.p_cmd.send(cmd)
+            self._check_cmd_status()
 
     def on_all_lamps_off_button_click(self):
         '''灯具全部关'''
-        logger.debug('on_all_lamps_off_button_click')
-        cmd = ZnldCmd()
-        cmd.dest_id = LampControl.BROADCAST_ID
-        cmd.dest_addr = 0
-        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
-        cmd.message = LampControl.MESG_LAMP_ALL_OFF
-        self.p_cmd.send(cmd)
-        if self.p_cmd.recv().cmd_result:
-            logger.debug('Successfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
-        else:
-            logger.error('Unsuccessfully broadcast mesg(%d): %s' % (cmd.cmd_id, binascii.b2a_hex(cmd.message)))
+        if (self.rc.get_comm_status().value != 1): # not in communication
+            logger.debug('on_all_lamps_off_button_click')
+            cmd = ZnldCmd()
+            cmd.dest_id = LampControl.BROADCAST_ID
+            cmd.dest_addr = 0
+            cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+            cmd.message = LampControl.MESG_LAMP_ALL_OFF
+            self.p_cmd.send(cmd)
+            self._check_cmd_status()
 
     def on_lamp_status_query_button_click(self, lamp_num):
         '''灯具状态查询'''
@@ -80,37 +98,35 @@ class ZNLDApp(Application):
 
     def on_lamp_confirm_button_click(self):
         """维修模式灯具确认"""
-        node_addr = int(self.frames[PageThree].spinboxes[2].get()) + \
-                    int(self.frames[PageThree].spinboxes[1].get()) * 10 + \
-                    int(self.frames[PageThree].spinboxes[0].get()) * 100
+        if (self.rc.get_comm_status().value != 1):  # not in communication
+            node_addr = int(self.frames[PageThree].spinboxes[2].get()) + \
+                        int(self.frames[PageThree].spinboxes[1].get()) * 10 + \
+                        int(self.frames[PageThree].spinboxes[0].get()) * 100
 
-        lamp1_val = self.frames[PageThree].var1.get()
-        lamp2_val = self.frames[PageThree].var2.get()
-        if lamp1_val > 0 and lamp2_val > 0:
-            lamp_on = LampControl.BYTE_ALL_ON
-        elif lamp1_val > 0 and lamp2_val == 0:
-            lamp_on = LampControl.BYTE_LEFT_ON
-        elif lamp1_val == 0 and lamp2_val > 0:
-            lamp_on = LampControl.BYTE_RIGHT_ON
-        else:
-            lamp_on = LampControl.BYTE_ALL_OFF
+            lamp1_val = self.frames[PageThree].var1.get()
+            lamp2_val = self.frames[PageThree].var2.get()
+            if lamp1_val > 0 and lamp2_val > 0:
+                lamp_on = LampControl.BYTE_ALL_ON
+            elif lamp1_val > 0 and lamp2_val == 0:
+                lamp_on = LampControl.BYTE_LEFT_ON
+            elif lamp1_val == 0 and lamp2_val > 0:
+                lamp_on = LampControl.BYTE_RIGHT_ON
+            else:
+                lamp_on = LampControl.BYTE_ALL_OFF
 
-        cmd = ZnldCmd()
-        cmd.cmd = ZnldCmd.CMD_LAMPCTRL
-        cmd.dest_addr = node_addr
-        cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(lamp1_val) + chr(lamp2_val) + LampControl.BYTE_RESERVED
+            cmd = ZnldCmd()
+            cmd.cmd = ZnldCmd.CMD_LAMPCTRL
+            cmd.dest_addr = node_addr
+            cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(lamp1_val) + chr(lamp2_val) + LampControl.BYTE_RESERVED
 
-        for id in self.stations.keys():
-            if self.stations[id]['addr'] == node_addr:
-                logger.debug('unicast to STA (%s) mesg: %s' % (id, binascii.b2a_hex(cmd.message)))
-                #cmd.dest_id = binascii.a2b_hex(id)
-                break
+            for id in self.stations.keys():
+                if self.stations[id]['addr'] == node_addr:
+                    logger.debug('unicast to STA (%s) mesg: %s' % (id, binascii.b2a_hex(cmd.message)))
+                    #cmd.dest_id = binascii.a2b_hex(id)
+                    break
 
-        self.p_cmd.send(cmd)
-        if self.p_cmd.recv().cmd_result:
-            logger.debug('got correct response')
-        else:
-            logger.error('got no or incorrect response')
+            self.p_cmd.send(cmd)
+            self._check_cmd_status()
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.

@@ -81,6 +81,8 @@ class Application(tk.Tk):
         self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
         self._stations = stations
 
+        self._comm_status = ['通讯正常']
+
         try:
             if "nt" == os.name:
                 self.wm_iconbitmap(bitmap="logo_48x48.ico")
@@ -105,12 +107,12 @@ class Application(tk.Tk):
 
         self.frames = {}
         for F in (StartPage, PageOne, PageTwo, PageThree, PageFour):
-            frame = F(self, self)
+            frame = F(self, self, self._comm_status)
             self.frames[F] = frame
             frame.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=0, pady=0, ipadx=0, ipady=0)  # 四个页面的位置都是 grid(row=0, column=0), 位置重叠，只有最上面的可见！！
         self.show_frame(StartPage)
-        self.after(1000, self.clocking)
-        pass
+
+        self.clocking()
 
     def clocking(self):
         self.time = datetime.datetime.now().strftime("%H:%M:%S %D")
@@ -163,7 +165,7 @@ class Application(tk.Tk):
 class StartPage(tk.Frame):
     """主页"""
 
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, comm_status):
         try:
             super().__init__(parent)
         except TypeError:
@@ -211,7 +213,7 @@ class StartPage(tk.Frame):
 class PageOne(tk.Frame):
     """灯具状态查询页面"""
 
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, comm_status):
         try:
             super().__init__(parent)
         except TypeError:
@@ -280,7 +282,7 @@ class PageOne(tk.Frame):
 class PageTwo(tk.Frame):
     """环境数据检测页面"""
 
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, comm_status):
         try:
             super().__init__(parent)
         except TypeError:
@@ -300,11 +302,13 @@ class PageTwo(tk.Frame):
 class PageThree(tk.Frame):
     """维修模式"""
 
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, comm_status):
         try:
             super().__init__(parent)
         except TypeError:
             tk.Frame.__init__(self)
+
+        self._comm_status = comm_status
 
         s = ttk.Style()
         s.configure("MID.TButton", foreground="black", background="white", font=MIDDLE_FONT, width=10, padding=12)
@@ -353,45 +357,33 @@ class PageThree(tk.Frame):
         button_okay.grid(row=2, columnspan=6)
 
         t = SimpleTable(self, 3, 4)
-        t.grid(row=3, columnspan=6, pady=20)
+        t.grid(row=3, columnspan=6, pady=(20, 0))
         t.set(0, 0, '工作状态')
         t.set(0, 2, '工作电流')
         t.set(1, 0, '工作电压')
         t.set(1, 2, '电网频率')
         t.set(2, 0, '有效功率')
         t.set(2, 2, 'CO2排放量')
-        # self.labels = []
-        # self.checks = []
-        # self.progbars = []
-        # v0 = tk.IntVar()
-        # v1 = tk.IntVar()
-        # v2 = tk.IntVar()
-        #
-        # s = ttk.Style()
-        # s.configure("CB.Toolbutton", foreground="black", background="white", width=6, padding=6)
-        #
-        # for n in range(len(LAMP_NAME)):
-        #     # create label, checkbotton & progressbar widgets for each lamps
-        #     self.labels.append(ttk.Label(self, text=LAMP_NAME[n]))
-        #     self.labels[n].grid(row=n, column=0, padx=10, pady=10)
-        #     self.checks.append(ttk.Checkbutton(self, text=' 开关 ', style='CB.Toolbutton', command=lambda: root.on_lamp_status_set_checkbutton_click(n)))
-        #     self.checks[n].grid(row=n, column=1, padx=10, pady=10)
-        #     self.progbars.append(ttk.Scale(self, from_=0, to=100, orient="horizontal",
-        #                      command=lambda x,y=1: root.on_lamp_set_slider_move(x,y)))
-        #     self.progbars[n].grid(row=n, column=2)
-        #
-        # self.checks[0].configure(variable=v0, command=lambda: root.on_lamp_status_set_checkbutton_click(0, v0.get()))
-        # self.checks[1].configure(variable=v1, command=lambda: root.on_lamp_status_set_checkbutton_click(1, v1.get()))
-        # self.checks[2].configure(variable=v2, command=lambda: root.on_lamp_status_set_checkbutton_click(2, v2.get()))
+
+        label_comm = ttk.Label(self, text="通讯状态：", font=MIDDLE_FONT)
+        label_comm.grid(row=4, column=0, padx=(50, 1), pady=5)
+        self.label_comm_status = ttk.Label(self, text=self._comm_status[0], font=MIDDLE_FONT)
+        self.label_comm_status.grid(row=4, column=1, sticky="nsew", padx=1, pady=5)
 
         button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
-        button_back.grid(row=4, columnspan=6)
+        button_back.grid(row=5, columnspan=6)
+
+        self._update_comm()
+
+    def _update_comm(self):
+        self.label_comm_status.config(text=self._comm_status[0])
+        self.after(1000, func=self._update_comm)
 
 
 class PageFour(tk.Frame):
     """系统网络设定"""
 
-    def __init__(self, parent, root):
+    def __init__(self, parent, root, comm_status):
         try:
             super().__init__(parent)
         except TypeError:
