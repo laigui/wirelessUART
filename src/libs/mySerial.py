@@ -81,6 +81,7 @@ class aSerial(object):
         rxStr = ''
         rx_cnt = 0
         timeout = 0
+        limit = s * 10
         if self.isOpen == True and n != 0:
             try:
                 if n == -1:
@@ -92,14 +93,14 @@ class aSerial(object):
                         if left >= 0:
                             rxStr = rxStr + self.sp.read(rxn)
                             rx_cnt = rx_cnt + rxn
-                            if s != 0:
+                            if limit != 0:
                                 timeout += 1
-                                if timeout > s:
-                                    raise RxTimeOutError(rxStr, n, s)
+                                if timeout > limit:
+                                    raise RxTimeOutError(rxStr, n, limit)
                         else:
                             rxStr = rxStr + self.sp.read(n - rx_cnt)
                             rx_cnt = n
-                        sleep(1)
+                        sleep(0.1)
             except (serial.SerialTimeoutException, serial.SerialException)as e:
                 logger.error("serial read error!")
                 logger.error(e)
