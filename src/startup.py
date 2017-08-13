@@ -117,7 +117,8 @@ class ZNLDApp(Application):
             cmd = ZnldCmd()
             cmd.cmd = ZnldCmd.CMD_LAMPCTRL
             cmd.dest_addr = node_addr
-            cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(lamp1_val) + chr(lamp2_val) + LampControl.BYTE_RESERVED
+            cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(int(lamp1_val*255/100)) \
+                          + chr(int(lamp2_val*255/100)) + LampControl.BYTE_RESERVED
 
             for id in self.stations.keys():
                 if self.stations[id]['addr'] == node_addr:
