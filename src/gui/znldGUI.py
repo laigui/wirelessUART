@@ -325,50 +325,51 @@ class PageThree(tk.Frame):
                           ('!pressed', 'ridge')])
 
         self.label1 = ttk.Label(self, text="该组节点数为:", font=LARGE_FONT)
-        self.label1.grid(row=0, column=0, padx=(20,10))
+        self.label1.grid(row=0, column=0, padx=(20,5))
         self.lamp_num = tk.StringVar()
         self.lamp_num.set(len(root._stations))
         self.label2 = ttk.Label(self, textvariable=self.lamp_num, font=LARGE_FONT)
-        self.label2.grid(row=0, column=1)
-        self.label3 = ttk.Label(self, text="节点号", font=LARGE_FONT)
-        self.label3.grid(row=1, column=0)
+        self.label2.grid(row=0, column=1, sticky='w')
+
+        label_comm = ttk.Label(self, text="通讯状态：", font=LARGE_FONT)
+        label_comm.grid(row=0, column=4, padx=(10,0))
+        self.label_comm_status = ttk.Label(self, text=self._comm_status[0], font=LARGE_FONT)
+        self.label_comm_status.grid(row=0, column=5)
+
+        self.label3 = ttk.Label(self, text="节点号:", font=LARGE_FONT)
+        self.label3.grid(row=1, column=0, sticky='w', padx=(20,1))
         self.spinboxes = []
         for n in range(3):
             if n == 0:
                 self.spinboxes.append(tk.Spinbox(self, from_=0, to=5, font=("Verdana", 30), width=3))
             else:
                 self.spinboxes.append(tk.Spinbox(self, from_=0, to=9, font=("Verdana", 30), width=3))
-            self.spinboxes[n].grid(row=1, column=n+1, pady=(1,20))
-        self.label4 = ttk.Label(self, text="调光1", font=LARGE_FONT)
-        self.label4.grid(row=0, column=4, padx=(20,10))
-        self.label5 = ttk.Label(self, text="调光2", font=LARGE_FONT)
-        self.label5.grid(row=1, column=4, padx=(20,10))
-
-        self.var1 = tk.IntVar()
-        self.progbar1 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
-                                 length=200, variable=self.var1)
-        self.progbar1.grid(row=0, column=5)
-        self.var2 = tk.IntVar()
-        self.progbar2 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=20,
-                                 length=200, variable=self.var2)
-        self.progbar2.grid(row=1, column=5)
+            self.spinboxes[n].grid(row=1, column=n+1, padx=(1,5), sticky='w')
 
         button_okay = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)
-        button_okay.grid(row=2, columnspan=6)
+        button_okay.grid(row=1, column=5)
 
-        t = SimpleTable(self, 3, 4)
-        t.grid(row=3, columnspan=6, pady=(20, 0))
+        self.label4 = ttk.Label(self, text="调光1(%)", font=LARGE_FONT)
+        self.label4.grid(row=2, column=0, padx=(20,10), sticky='w')
+        self.label5 = ttk.Label(self, text="调光2(%)", font=LARGE_FONT)
+        self.label5.grid(row=3, column=0, padx=(20,10), sticky='w')
+
+        self.var1 = tk.IntVar()
+        self.progbar1 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=30,
+                                 length=300, variable=self.var1)
+        self.progbar1.grid(row=2, column=1, columnspan=3, sticky='w')
+        self.var2 = tk.IntVar()
+        self.progbar2 = tk.Scale(self, from_=0, to=100, orient='horizontal', resolution=1, width=30,
+                                 length=300, variable=self.var2)
+        self.progbar2.grid(row=3, column=1, columnspan=3, sticky='w')
+
+
+        t = SimpleTable(self, 2, 4)
+        t.grid(row=4, columnspan=6, pady=(20, 20))
         t.set(0, 0, '工作状态')
         t.set(0, 2, '工作电流')
         t.set(1, 0, '工作电压')
-        t.set(1, 2, '电网频率')
-        t.set(2, 0, '有效功率')
-        t.set(2, 2, 'CO2排放量')
-
-        label_comm = ttk.Label(self, text="通讯状态：", font=MIDDLE_FONT)
-        label_comm.grid(row=4, column=0, padx=(50, 1), pady=5)
-        self.label_comm_status = ttk.Label(self, text=self._comm_status[0], font=MIDDLE_FONT)
-        self.label_comm_status.grid(row=4, column=1, sticky="nsew", padx=1, pady=5)
+        t.set(1, 2, '有效功率')
 
         button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
         button_back.grid(row=5, columnspan=6)
