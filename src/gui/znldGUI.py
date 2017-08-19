@@ -332,9 +332,9 @@ class PageThree(tk.Frame):
         self.label2.grid(row=0, column=1, sticky='w')
 
         label_comm = ttk.Label(self, text="通讯状态：", font=LARGE_FONT)
-        label_comm.grid(row=0, column=4, padx=(10,0))
+        label_comm.grid(row=2, column=4)
         self.label_comm_status = ttk.Label(self, text=self._comm_status[0], font=LARGE_FONT)
-        self.label_comm_status.grid(row=0, column=5)
+        self.label_comm_status.grid(row=2, column=5)
 
         self.label3 = ttk.Label(self, text="节点号:", font=LARGE_FONT)
         self.label3.grid(row=1, column=0, sticky='w', padx=(20,1))
@@ -347,7 +347,7 @@ class PageThree(tk.Frame):
             self.spinboxes[n].grid(row=1, column=n+1, padx=(1,5), sticky='w')
 
         button_okay = ttk.Button(self, text="确定", style="MID.TButton", command=root.on_lamp_confirm_button_click)
-        button_okay.grid(row=1, column=5)
+        button_okay.grid(row=3, column=4)
 
         self.label4 = ttk.Label(self, text="调光1(%)", font=LARGE_FONT)
         self.label4.grid(row=2, column=0, padx=(20,10), sticky='w')
