@@ -129,7 +129,7 @@ class ThreadRx(threading.Thread):
                     or (self._role == 'RELAY'):
                 # place rx_frame into queue for tx routine process
                 self._frames.put(rx_frame)
-                logger.debug('A rx frame is queued!')
+                #logger.debug('A rx frame is queued!')
 
         logger.info('Thread receiving ends')
         pass
@@ -588,7 +588,7 @@ class Protocol(Process):
             except Queue.Empty:
                 continue
             else:
-                logger.debug('A rx frame is popped!')
+                #logger.debug('A rx frame is popped!')
                 self._Rx_queue.task_done()
                 rx_src_id = rx_frame[LampControl.SRCID_S:LampControl.DESTID_S]
                 rx_dest_id = rx_frame[LampControl.DESTID_S:LampControl.SN]
