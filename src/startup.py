@@ -49,7 +49,7 @@ class ZNLDApp(Application):
         logger.debug('End')
 
     def _check_cmd_status(self):
-        if self.p_cmd.poll():
+        if self.p_cmd.poll(None): # pending until result is back
             if self.p_cmd.recv().cmd_result:
                 logger.debug('CMD done SUCCESS!')
                 return 0
@@ -129,14 +129,10 @@ class ZNLDApp(Application):
             #         #cmd.dest_id = binascii.a2b_hex(id)
             #         break
             self.p_cmd.send(cmd)
-            self.p_cmd.poll()
-            self._communication = self.rc.get_comm_status().value
-            if self._communication == 2:
+            if self._check_cmd_status() == 0:
                 cmd.message = LampControl.TAG_POWER1_POLL + LampControl.BYTE_RESERVED * 4
                 self.p_cmd.send(cmd)
-                self.p_cmd.poll()
-                self._communication = self.rc.get_comm_status().value
-                if self._check_cmd_status() == 2:
+                if self._check_cmd_status() == 0:
                     stas = self.rc.get_stas_dict()
                     node_id = self.rc.get_id_from(node_addr)
                     table = self.frames[PageThree].table
