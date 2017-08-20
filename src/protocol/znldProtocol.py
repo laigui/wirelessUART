@@ -652,6 +652,10 @@ class Protocol(Process):
                         self.stations[id]['current'] = ord(received_mesg[2])
                         self.stations[id]['power'] = ord(received_mesg[3])
                         self.stations[id]['energy'] = ord(received_mesg[4])
+                        logger.debug('voltage %d' % ord(received_mesg[1]))
+                        logger.debug('current %d' % ord(received_mesg[2]))
+                        logger.debug('power %d' % ord(received_mesg[3]))
+                        logger.debug('energy %d' % ord(received_mesg[4]))
                     elif expected == LampControl.TAG_POWER2_ACK:
                         # TODO: need update for data storage
                         pass
