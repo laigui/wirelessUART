@@ -8,13 +8,16 @@ try:
     import tkinter as tk
     import tkinter.ttk as ttk
     import tkinter.filedialog as filedialog
+    import tkMessageBox
 except:
     import Tkinter as tk
     import ttk
     import tkFileDialog as filedialog
+    import tkMessageBox
 import json
 import shutil
 import datetime
+import traceback
 
 
 LARGE_FONT = ("Verdana", 16)
@@ -444,14 +447,34 @@ class PageFour(tk.Frame):
             return 'null'
 
     def save_log_file(self):
-        src = self.get_latest_log_file()
-        dest = '/media/pi/265B-0F19/znlg_log.txt'
-        try:
-            shutil.copy(src, dest)
-            print("Copied from " + src + " to " + dest)
-        except:
-            print("Destination " + dest + " open failed!")
+        from time import localtime, strftime
+        archive_name = strftime("znld-logs-%y%m%d-%H%M%S", localtime())
 
+        usb_dev = self.get_usb_media()
+        if usb_dev:
+            src = os.path.expanduser(os.path.join('~', 'znld-logs'))
+            dest = usb_dev
+            try:
+                file = shutil.make_archive(archive_name, 'zip', root_dir=src)
+                filename = os.path.basename(file)
+                shutil.move(file, dest)
+                tkMessageBox.showinfo('保存记录', '已备份文件{0}到移动盘'.format(filename))
+            except:
+                traceback.print_exc()
+                tkMessageBox.showinfo('保存记录', '复制文件失败')
+        else:
+            tkMessageBox.showerror('没有检测到移动盘！')
+
+    def get_usb_media(self):
+        from subprocess import check_output
+        try:
+            log = check_output(["lsblk", "-i"])
+        except:
+            pass
+        for usb in log.split():
+            if usb.find('media') != -1:
+                return usb
+        return None
 
 if __name__ == '__main__':
     # 实例化Application
