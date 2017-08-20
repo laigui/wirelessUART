@@ -648,10 +648,10 @@ class Protocol(Process):
                         self.stations[id]['lamp_adj1_status'] = received_mesg[2]
                         self.stations[id]['lamp_adj2_status'] = received_mesg[3]
                     elif expected == LampControl.TAG_POWER1_ACK:
-                        self.stations[id]['voltage'] = received_mesg[1]
-                        self.stations[id]['current'] = received_mesg[2]
-                        self.stations[id]['power'] = received_mesg[3]
-                        self.stations[id]['energy'] = received_mesg[4]
+                        self.stations[id]['voltage'] = ord(received_mesg[1])
+                        self.stations[id]['current'] = ord(received_mesg[2])
+                        self.stations[id]['power'] = ord(received_mesg[3])
+                        self.stations[id]['energy'] = ord(received_mesg[4])
                     elif expected == LampControl.TAG_POWER2_ACK:
                         # TODO: need update for data storage
                         pass
