@@ -37,7 +37,7 @@ class ZNLDApp(Application):
             self._comm_status[0] = '通讯成功'
         else:
             self._comm_status[0] = '通讯失败'
-        self.after(1000, func=self._update_comm)
+        self.after(500, func=self._update_comm)
 
     def __del__(self):
         logger.debug('Waiting for routine end')
@@ -129,10 +129,14 @@ class ZNLDApp(Application):
             #         #cmd.dest_id = binascii.a2b_hex(id)
             #         break
             self.p_cmd.send(cmd)
-            if self._check_cmd_status() == 0:
+            self.p_cmd.poll()
+            self._communication = self.rc.get_comm_status().value
+            if self._communication == 2:
                 cmd.message = LampControl.TAG_POWER1_POLL + LampControl.BYTE_RESERVED * 4
                 self.p_cmd.send(cmd)
-                if self._check_cmd_status() == 0:
+                self.p_cmd.poll()
+                self._communication = self.rc.get_comm_status().value
+                if self._check_cmd_status() == 2:
                     stas = self.rc.get_stas_dict()
                     node_id = self.rc.get_id_from(node_addr)
                     table = self.frames[PageThree].table
@@ -140,6 +144,7 @@ class ZNLDApp(Application):
                     table.set(0, 3, stas[node_id]['voltage'])
                     table.set(1, 1, stas[node_id]['current'])
                     table.set(1, 3, stas[node_id]['power'])
+                    print 'GUI updated'
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.
