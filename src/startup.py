@@ -120,12 +120,15 @@ class ZNLDApp(Application):
             cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(int(lamp1_val*255/100)) \
                           + chr(int(lamp2_val*255/100)) + LampControl.BYTE_RESERVED
 
-            for id in self.stations.keys():
-                if self.stations[id]['addr'] == node_addr:
-                    logger.debug('unicast to STA (%s) mesg: %s' % (id, binascii.b2a_hex(cmd.message)))
-                    #cmd.dest_id = binascii.a2b_hex(id)
-                    break
+            # for id in self.stations.keys():
+            #     if self.stations[id]['addr'] == node_addr:
+            #         logger.debug('unicast to STA (%s) mesg: %s' % (id, binascii.b2a_hex(cmd.message)))
+            #         #cmd.dest_id = binascii.a2b_hex(id)
+            #         break
+            self.p_cmd.send(cmd)
+            self._check_cmd_status()
 
+            cmd.message = LampControl.TAG_POWER1_POLL + LampControl.BYTE_RESERVED * 4
             self.p_cmd.send(cmd)
             self._check_cmd_status()
 
