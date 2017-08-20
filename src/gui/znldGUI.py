@@ -367,12 +367,12 @@ class PageThree(tk.Frame):
         self.progbar2.grid(row=3, column=1, columnspan=3, sticky='w')
 
 
-        t = SimpleTable(self, 2, 4)
-        t.grid(row=4, columnspan=6, pady=(20, 20))
-        t.set(0, 0, '工作状态')
-        t.set(0, 2, '工作电流')
-        t.set(1, 0, '工作电压')
-        t.set(1, 2, '有效功率')
+        self.table = SimpleTable(self, 2, 4)
+        self.table.grid(row=4, columnspan=6, pady=(20, 20))
+        self.table.set(0, 0, '总电能量')
+        self.table.set(0, 2, '工作电流')
+        self.table.set(1, 0, '工作电压')
+        self.table.set(1, 2, '有效功率')
 
         button_back = ttk.Button(self, text="回到主页", style="BIG.TButton", command=lambda: root.show_frame(StartPage))
         button_back.grid(row=5, columnspan=6)

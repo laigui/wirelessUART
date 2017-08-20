@@ -52,10 +52,13 @@ class ZNLDApp(Application):
         if self.p_cmd.poll():
             if self.p_cmd.recv().cmd_result:
                 logger.debug('CMD done SUCCESS!')
+                return 0
             else:
                 logger.error('CMD done FAIL!')
+                return -1
         else:
             self.after(1000, self._check_cmd_status)
+            return 1
 
     def on_all_lamps_on_button_click(self):
         '''灯具全部开'''
@@ -116,7 +119,7 @@ class ZNLDApp(Application):
 
             cmd = ZnldCmd()
             cmd.cmd = ZnldCmd.CMD_LAMPCTRL
-            cmd.dest_addr = node_addr
+            cmd.dest_addr = node_addr # logic addr in dec here, will be converted into ID
             cmd.message = LampControl.TAG_LAMP_CTRL + lamp_on + chr(int(lamp1_val*255/100)) \
                           + chr(int(lamp2_val*255/100)) + LampControl.BYTE_RESERVED
 
@@ -126,11 +129,17 @@ class ZNLDApp(Application):
             #         #cmd.dest_id = binascii.a2b_hex(id)
             #         break
             self.p_cmd.send(cmd)
-            self._check_cmd_status()
-
-            cmd.message = LampControl.TAG_POWER1_POLL + LampControl.BYTE_RESERVED * 4
-            self.p_cmd.send(cmd)
-            self._check_cmd_status()
+            if self._check_cmd_status() == 0:
+                cmd.message = LampControl.TAG_POWER1_POLL + LampControl.BYTE_RESERVED * 4
+                self.p_cmd.send(cmd)
+                if self._check_cmd_status() == 0:
+                    stas = self.rc.get_stas_dict()
+                    node_id = self.rc.get_id_from(node_addr)
+                    table = self.frames[PageThree].table
+                    table.set(0, 1, stas[node_id]['energe'])
+                    table.set(0, 3, stas[node_id]['voltage'])
+                    table.set(1, 1, stas[node_id]['current'])
+                    table.set(1, 3, stas[node_id]['power'])
 
 def logger_init():
     ''' logging configuration in code, which is not in use any more.

@@ -418,7 +418,7 @@ class Protocol(Process):
                 cmd = self._poll_cmd()
                 if cmd.cmd == ZnldCmd.CMD_LAMPCTRL:
                     if cmd.dest_id == None:
-                        dest_id = self._get_id_from(cmd.dest_addr)
+                        dest_id = self.get_id_from(cmd.dest_addr)
                         if dest_id == None:
                             logger.error('id look up failed by addr=%d' % cmd.dest_addr)
                             cmd.cmd_result = False
@@ -542,7 +542,7 @@ class Protocol(Process):
             self.sv_comm_status.value = -1 #'通讯失败'
         self._p_cmd.send(cmd)
 
-    def _get_id_from(self, addr):
+    def get_id_from(self, addr):
         '''
         look up node id from stations dictionary based on the logic addr
         if no match, return None.
