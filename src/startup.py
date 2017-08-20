@@ -136,7 +136,7 @@ class ZNLDApp(Application):
                     stas = self.rc.get_stas_dict()
                     node_id = self.rc.get_id_from(node_addr)
                     table = self.frames[PageThree].table
-                    table.set(0, 1, stas[node_id]['energe'])
+                    table.set(0, 1, stas[node_id]['energy'])
                     table.set(0, 3, stas[node_id]['voltage'])
                     table.set(1, 1, stas[node_id]['current'])
                     table.set(1, 3, stas[node_id]['power'])
