@@ -77,7 +77,7 @@ class E32(aSerial):
         10dbm, FEC on, transparent TX, push-pull IO, 250ms wakeup time
         '''
         if config == None:
-            default_config = '\xc0\x00\x01\x1c\x01\x47'
+            default_config = '\xc0\x00\x00\x1c\x14\x47'
         else:
             default_config = config
         self.transmit(default_config)
@@ -111,7 +111,7 @@ class E32(aSerial):
 if __name__ == "__main__":
     logging.basicConfig(level='DEBUG')
     if ISRPI:
-        port = '/dev/ttyS0'
+        port = '/dev/ttyAMA0'
     else:
         port = '/dev/ttyUSB0'
     ser = E32(port=port, inHex=False)
