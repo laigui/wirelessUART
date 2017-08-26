@@ -203,7 +203,8 @@ class Protocol(Process):
         self._max_frame_len = max(self._tx_frame_len, self._rx_frame_len)
         self._frame_no = -2
         self._max_frame_no = 25
-        self.stations = stations # dictionary for station's info storage
+        self.stations = Manager().dict() # dictionary for station's info storage
+        self.stations.update(stations)
         self._STA_lamp_status = '' # for station only
 
         self.sv_comm_status = Value('b', 0)  # unsigned char, for sharing between processes
