@@ -613,6 +613,8 @@ class Protocol(Process):
             return recv_mesg
         elif result == 1:
             logger.error('RX Queue RxTimeOut!')
+            self.ser.do_e32_reset()
+            logger.info('E32 reset done')
             raise RxTimeOut
         elif result == 2:
             raise RxNack
