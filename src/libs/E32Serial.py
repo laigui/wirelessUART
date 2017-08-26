@@ -54,38 +54,53 @@ class E32(aSerial):
                 GPIO.output(self.GPIO_M0, GPIO.HIGH)
                 GPIO.output(self.GPIO_M1, GPIO.HIGH)
 
+    def do_e32_reset(self):
+        if self.isOpen == True:
+            cmd_rst = '\xC4\xC4\xC4'
+            if ISRPI:
+                self.set_E32_mode(3)
+                time.sleep(0.1)
+                self.transmit(cmd_rst)
+                time.sleep(0.1)
+                while not self.get_AUX():
+                    continue
+                self.set_E32_mode(0)
+
     def get_version(self, inHex=True):
-        cmd_str = '\xC3\xC3\xC3'
-        self.transmit(cmd_str)
-        time.sleep(1)
-        if inHex:
-            return self.receive(n=4,s=3)
-        else:
-            return binascii.hexlify(self.receive(n=4,s=3))
+        if self.isOpen == True:
+            cmd_str = '\xC3\xC3\xC3'
+            self.transmit(cmd_str)
+            time.sleep(1)
+            if inHex:
+                return self.receive(n=4,s=3)
+            else:
+                return binascii.hexlify(self.receive(n=4,s=3))
 
     def get_config(self, inHex=True):
-        cmd_str = '\xC1\xC1\xC1'
-        self.transmit(cmd_str)
-        time.sleep(1)
-        if inHex:
-            return self.receive(n=6,s=3)
-        else:
-            return binascii.hexlify(self.receive(n=6,s=3))
+        if self.isOpen == True:
+            cmd_str = '\xC1\xC1\xC1'
+            self.transmit(cmd_str)
+            time.sleep(1)
+            if inHex:
+                return self.receive(n=6,s=3)
+            else:
+                return binascii.hexlify(self.receive(n=6,s=3))
 
     def set_config(self, config=None):
         ''' set config to the default: 9600bps for uart and air, addr=1, channel=1
         10dbm, FEC on, transparent TX, push-pull IO, 250ms wakeup time
         '''
-        if config == None:
-            default_config = '\xc0\x00\x00\x1c\x14\x47'
-        else:
-            default_config = config
-        self.transmit(default_config)
-        time.sleep(1)
-        if self.get_config() == default_config:
-            logger.info('set config successfully')
-        else:
-            logger.error('set config failed')
+        if self.isOpen == True:
+            if config == None:
+                default_config = '\xc0\x00\x00\x1c\x14\x47'
+            else:
+                default_config = config
+            self.transmit(default_config)
+            time.sleep(1)
+            if self.get_config() == default_config:
+                logger.info('set config successfully')
+            else:
+                logger.error('set config failed')
 
     def get_AUX(self):
         if ISRPI:
@@ -97,15 +112,16 @@ class E32(aSerial):
             return True
 
     def transmit(self, aStr):
-        cnt = 0
-        while self.get_AUX() == False:
-            cnt += 1
-            if cnt >= self.AUX_timeout:
-                logger.error("can't get AUX high before sending data to E32!")
-                break
-            time.sleep(1)
-        else:
-            super(E32, self).transmit(aStr)
+        if self.isOpen == True:
+            cnt = 0
+            while self.get_AUX() == False:
+                cnt += 1
+                if cnt >= self.AUX_timeout:
+                    logger.error("can't get AUX high before sending data to E32!")
+                    break
+                time.sleep(1)
+            else:
+                super(E32, self).transmit(aStr)
 
 
 if __name__ == "__main__":
